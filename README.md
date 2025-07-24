@@ -1,22 +1,11 @@
 # PICO TNC
 
-PICO TNC is the Terminal Node Controler for Amateur Packet Radio powered by Raspberry Pi Pico.
-
-This TNC has same functionality as WB8WGA's PIC TNC.
+PICO TNC is the Terminal Node Controler for Amateur Packet Radio powered by Raspberry Pi Pico. This is a fork of that project. I intend to remove all of the major features of the code except for the modulator/demodulator secton and insert the z80 emulator from my TNCEMU project to see if we can make a fully functional TNC that supports full connections and has pbbs support.
 
 ## PIC TNC features
 
 - Encode and decode Bell 202 AFSK signal without modem chip
-- Digipeat UI packet up to 1024 byte length
-- Send beacon packet
-- Support converse mode
-- Support GPS tracker feature
 - Support both USB serial and UART serial interface
-
-## Additional features
-
-- Support KISS mode
-- Support multi-port up to 3 ports
 
 ## How to build
 
@@ -30,5 +19,4 @@ make -j4
 (flash 'pico_tnc/pico_tnc.uf2' file to your Pico)
 ```
 ![bell202-wave](bell202-wave.png)
-![command line](command.png)
 [![schemantic](schematic.jpg)](schematic.png)
