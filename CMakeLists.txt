@@ -11,5 +11,7 @@ set(PICO_EXAMPLES_PATH ${PROJECT_SOURCE_DIR})
 pico_sdk_init()
 
 include(example_auto_set_url.cmake)
-
+message(STATUS "CMAKE_CROSSCOMPILING = ${CMAKE_CROSSCOMPILING}")
 add_subdirectory(pico_tnc)
+add_subdirectory(z80emu)
+

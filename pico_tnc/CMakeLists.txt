@@ -24,10 +24,35 @@ add_executable(pico_tnc
 
 pico_generate_pio_header(pico_tnc ${CMAKE_CURRENT_LIST_DIR}/pio_dac.pio)
 
-target_include_directories(pico_tnc PRIVATE
-        include
+# === Embed the ROM binary using objcopy ===
+set(ROM_FILE ${CMAKE_SOURCE_DIR}/roms/hk21rom.bin)
+set(ROM_OBJ ${CMAKE_CURRENT_BINARY_DIR}/tncrom.o)
+
+# Step 1: Generate ROM object from binary
+add_custom_command(
+  OUTPUT ${ROM_OBJ}
+  COMMAND ${CMAKE_OBJCOPY} -I binary -O elf32-littlearm -B arm ${ROM_FILE} ${ROM_OBJ}
+  DEPENDS ${ROM_FILE}
+  COMMENT "Embedding ROM binary as object file"
 )
 
+# Step 2: Declare custom target for ROM object
+add_custom_target(rom_obj ALL DEPENDS ${ROM_OBJ})
+
+# Step 3: Make sure pico_tnc depends on the rom_obj_target
+add_dependencies(pico_tnc rom_obj)
+
+# Step 4: Include the binary object file in the link
+# Link manually using the object file
+target_link_options(pico_tnc PRIVATE ${ROM_OBJ})
+
+# === Includes ===
+target_include_directories(pico_tnc PRIVATE
+        include
+	${CMAKE_CURRENT_SOURCE_DIR}/z80emu
+)
+
+# === Link libraries ===
 target_link_libraries(pico_tnc
 		pico_stdlib
         #pico_stdio_uart
@@ -39,6 +64,7 @@ target_link_libraries(pico_tnc
 		# For the dummy output:
 		hardware_pio
 		#pico_multicore
+	z80emu
 		)
 
 pico_enable_stdio_usb(pico_tnc 1)
