@@ -11,15 +11,9 @@ add_executable(pico_tnc
         packet_table.c
         usb_input.c
         usb_output.c
-        cmd.c
         serial.c
         tty.c
         flash.c
-        gps.c
-        unproto.c
-        digipeat.c
-        beacon.c
-        kiss.c
 )
 
 pico_generate_pio_header(pico_tnc ${CMAKE_CURRENT_LIST_DIR}/pio_dac.pio)
