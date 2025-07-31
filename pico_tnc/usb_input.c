@@ -31,10 +31,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "class/cdc/cdc_device.h"
 #include "pico/sync.h"
 
-#include "cmd.h"
 #include "usb_output.h"
 #include "tty.h"
-#include "kiss.h"
 
 // usb cdc callback function
 void tud_cdc_rx_cb(uint8_t itf)

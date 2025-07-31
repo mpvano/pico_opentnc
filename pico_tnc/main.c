@@ -50,21 +50,16 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //#include "packet_table.h"
 #endif
 
-#include "cmd.h"
 //#include "usb_input.h"
 #include "usb_output.h"
 #include "serial.h"
 #include "tty.h"
-#include "beacon.h"
 
 #define TIME_10MS (10 * 1000)    // 10 ms = 10 * 1000 us
 
 // greeting message
 static const uint8_t greeting[] =
-    "\r\nJN1DFF MODELESS TNC  V 1.00\r\n"
-    "Type HELP for Info\r\n"
-    "\r\n"
-    "cmd: ";
+    "\r\nPico TNCEMU Emulated Z80 TNC V 1.00\r\n";
 
 int main()
 {
@@ -101,7 +96,7 @@ int main()
     gpio_put(SMPS_PIN, 0);
 #endif
 
-    // output greeting text
+    // output greeting text to both tty's (serial/usb)
     tty_write_str(&tty[0], greeting);
     tty_write_str(&tty[1], greeting);
 
@@ -124,6 +119,8 @@ int main()
         }
 #endif
 
+        // Emulate z80 code
+        tnc_emulate();
         // receive packet
         receive();
 
@@ -146,10 +143,10 @@ int main()
 #endif
 
         // send beacon
-        beacon();
+//        beacon();
 
         // calibrate off
-        calibrate();
+//        calibrate();
 
 #ifdef BUSY_PIN
 //        gpio_put(BUSY_PIN, 0);

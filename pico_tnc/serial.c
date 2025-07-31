@@ -32,12 +32,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "tnc.h"
 #include "tty.h"
-#include "gps.h"
 
 #define UART_BAUDRATE 115200
 #define UART_QUEUE_LEN 1024
 
-#define GPS_ENABLE 1
+#define GPS_ENABLE 0
 
 #define GPS_BAUDRATE 9600
 

@@ -274,19 +274,14 @@ enum TTY_SERIAL {
 };
 
 typedef struct TTY {
-    uint8_t kiss_buf[KISS_PACKET_LEN];
-    uint8_t cmd_buf[CMD_BUF_LEN + 1];
-    int kiss_idx;
-    int cmd_idx;
+    uint8_t input_buf[CMD_BUF_LEN + 1];
+    int inp_head;
+    int inp_tail;
 
     uint8_t num;        // index of tty[]
 
     uint8_t tty_mode;   // terminal or GPS
     uint8_t tty_serial; // USB, UART0, UART1
-
-    uint8_t kiss_mode;  // kiss mode
-    uint8_t kiss_state; // kiss state
-    uint32_t kiss_timeout; // kiss timer
 
     tnc_t *tp;          // input/output port No.
 } tty_t;

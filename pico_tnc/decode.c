@@ -36,8 +36,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "ax25.h"
 #include "usb_output.h"
 #include "tty.h"
-#include "digipeat.h"
-#include "kiss.h"
 
 #define FCS_OK 0x0f47
 //#define FCS_OK (0x0f47 ^ 0xffff)
@@ -121,26 +119,19 @@ static void output_packet(tnc_t *tp)
     // count received packet
     ++tp->pkt_cnt;
 
-    // digipeat
-    if (param.digi) digipeat(tp);
-
     for (int i = TTY_USB; i <= TTY_UART0; i++) {
         tty_t *ttyp = &tty[i];
 
-        if (ttyp->kiss_mode) kiss_output(ttyp, tp); // kiss mode
-        else {
+        // TNC MONitor command
+        switch (param.mon) {
+            case MON_ALL:
+                display_packet(ttyp, tp);
+                break;
 
-            // TNC MONitor command
-            switch (param.mon) {
-                case MON_ALL:
+            case MON_ME:
+                if (ax25_callcmp(&param.mycall, &data[0])) { // dst addr check
                     display_packet(ttyp, tp);
-                    break;
-
-                case MON_ME:
-                    if (ax25_callcmp(&param.mycall, &data[0])) { // dst addr check
-                        display_packet(ttyp, tp);
-                    }
-            }
+                }
         }
     }
 }

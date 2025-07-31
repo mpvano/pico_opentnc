@@ -28,11 +28,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
 #include "tnc.h"
-#include "kiss.h"
-#include "cmd.h"
 
 void tty_init(void);
 void tty_input(tty_t *ttyp, int ch);
 void tty_write(tty_t *ttyp, uint8_t const *data, int len);
 void tty_write_char(tty_t *ttyp, uint8_t ch);
 void tty_write_str(tty_t *ttyp, uint8_t const *str);
+bool tty_getch(tty_t *ttyp, int *ch);
+bool tty_peek(tty_t *ttyp);

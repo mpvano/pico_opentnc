@@ -34,15 +34,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "hardware/uart.h"
 
 #include "tnc.h"
-#include "cmd.h"
 #include "usb_output.h"
-#include "tnc.h"
 #include "usb_input.h"
 #include "serial.h"
-#include "unproto.h"
-#include "kiss.h"
-
-#define CONVERSE_PORT 0
 
 // usb echo flag
 //uint8_t usb_echo = 1; // on
@@ -74,8 +68,6 @@ void tty_init(void)
 
         ttyp->tty_mode = tty_mode[i];
         ttyp->tty_serial = tty_serial[i];
-
-        ttyp->kiss_mode = false;
     }
 }
 
@@ -106,16 +98,6 @@ void tty_write_str(tty_t *ttyp, uint8_t const *str)
     tty_write(ttyp, str, len);
 }
 
-#define BS '\b'
-#define CR '\r'
-#define DEL '\x7f'
-#define BELL '\a'
-#define CTRL_C '\x03'
-#define FEND 0xc0
-#define SP ' '
-
-#define KISS_TIMEOUT (1 * 100) // 1 sec
- 
 #define CAL_DATA_MAX 3
 
 static const uint8_t calibrate_data[CAL_DATA_MAX] = {
@@ -130,83 +112,23 @@ static const char *calibrate_str[CAL_DATA_MAX] = {
 
 void tty_input(tty_t *ttyp, int ch)
 {
-    if (ttyp->kiss_state != KISS_OUTSIDE) {
+    ttyp->input_buf[ttyp->inp_head++] = ch;
+    ttyp->inp_head &= 0xFF;
+}
 
-        // inside KISS frame
-        if (tnc_time() - ttyp->kiss_timeout < KISS_TIMEOUT) {
-            kiss_input(ttyp, ch);
-            return;
-        }
-        // timeout, exit kiss frame
-        ttyp->kiss_state = KISS_OUTSIDE;
-    }
+bool tty_getch(tty_t *ttyp, int *ch)
+{
+    if(ttyp->inp_head == ttyp->inp_tail)
+        return(false);
 
-    // calibrate mode
-    if (calibrate_mode) {
-        tnc_t *tp = &tnc[0];
+    *ch = ttyp->input_buf[ttyp->inp_tail++];
+    ttyp->inp_tail &= 0xFF;
+    return(true);
+}
 
-        switch (ch) {
-            case SP: // toggle mark/space
-                if (++calibrate_idx >= CAL_DATA_MAX) calibrate_idx = 0;
-                tp->cal_data = calibrate_data[calibrate_idx];
-                tty_write_str(ttyp, calibrate_str[calibrate_idx]);
-                tp->cal_time = tnc_time();
-                break;
-
-            case CTRL_C:
-                tp->send_state = SP_CALIBRATE_OFF;
-                break;
-
-            default:
-                tty_write_char(ttyp, BELL);
-        }
-        return;
-    }
-
-    switch (ch) {
-        case FEND: // KISS frame end
-            kiss_input(ttyp, ch);
-            break;
-
-        case BS:
-        case DEL:
-            if (ttyp->cmd_idx > 0) {
-                --ttyp->cmd_idx;
-                if (param.echo) tty_write_str(ttyp, "\b \b");
-            } else {
-                if (param.echo) tty_write_char(ttyp, BELL);
-            }
-            break;
-
-        case CR:
-            if (param.echo) tty_write_str(ttyp, "\r\n");
-            if (ttyp->cmd_idx > 0) {
-                ttyp->cmd_buf[ttyp->cmd_idx] = '\0';
-                if (converse_mode) {
-                    send_unproto(&tnc[CONVERSE_PORT], ttyp->cmd_buf, ttyp->cmd_idx); // send UI packet
-                } else {
-                    cmd(ttyp, ttyp->cmd_buf, ttyp->cmd_idx);
-                }
-            }
-            if (!(converse_mode | calibrate_mode)) tty_write_str(ttyp, "cmd: ");
-            ttyp->cmd_idx = 0;
-            break;
-
-        case CTRL_C:
-            if (converse_mode) {
-                converse_mode = false;
-            }
-            tty_write_str(ttyp, "\r\ncmd: ");
-            ttyp->cmd_idx = 0;
-            break;
-
-        default:
-            if ((ch >= ' ' && ch <= '~') && ttyp->cmd_idx < CMD_BUF_LEN) {
-                ttyp->cmd_buf[ttyp->cmd_idx++] = ch;
-            } else {
-                ch = BELL;
-            }
-            if (param.echo) tty_write_char(ttyp, ch);
-
-    }
+bool tty_peek(tty_t *ttyp)
+{
+    if(ttyp->inp_head == ttyp->inp_tail)
+        return(false);
+    else return true;
 }

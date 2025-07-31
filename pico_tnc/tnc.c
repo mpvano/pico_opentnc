@@ -32,6 +32,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "ax25.h"
 #include "flash.h"
+#include "tty.h"
 
 uint32_t __tnc_time;
 
@@ -42,17 +43,12 @@ double  total;
 double  timer_int,sio_int;
 
 /* tnc emulator */
-unsigned int key;
-unsigned char keybuf[16];
-unsigned char keyhead = 0;
-unsigned char keytail = 0;
 unsigned char flop,oldptt;
 unsigned char RxCharIn_Idx=0;
 unsigned char ax25rdy=0;
 unsigned char feedflag=0;
 unsigned char abortflag=0;
 unsigned char txundr_count=0;
-int activity,activity2;
 unsigned short int mycrc;
 int rxcnt;
 
@@ -171,23 +167,20 @@ void tnc_init(void)
     /* Reset emulated SIO state machines */
     SIO_Reset(&sioa); /* Reset Emulated Serial i/o a */
     SIO_Reset(&siob); /* Reset Emulated Serial i/o b */
-	sio_int = 0;
+	  sio_int = 0;
 
     /* Reset z80 emulator */
     Z80Reset(&state);
 
     /* Init z80 cycle time counters */
     total = timer_int = sio_int =  0.0;
-
-    /* Init some activity timers that control sleep */
-    activity = 0;
-    activity2 = 0;
-
 }
 
 /* Run some cycles of emulated tnc */
 void tnc_emulate(void)
 {
+    tnc_t *tp = &tnc[0];
+
 #ifdef TNCEMUDEBUG
     printf("PC=%x cycles=%.0f\n",state.pc,total);
     cycles = Z80Emulate(&state, 1);
@@ -306,7 +299,7 @@ the machine you will be emulating on. */
       }
       else /* flip */
       {
-        if(keyhead != keytail)
+        if( tty_peek(&tty[0]) || tty_peek(&tty[1] ) )
         {
 // This breaks inital autobaud!   if(state.iff1 && (siob.registers[1] & 0x18) )
 //      {
@@ -331,7 +324,6 @@ the machine you will be emulating on. */
         /* Here we check if there is any incoming data */
         if (0/*Incoming data from modem */)
         {
-          activity2 = 3000; /* we have activity so set counter for sleep algo */
           for(int x=0; x < rxcnt; x++) 
           Ax25_In_Q[Ax25_In_Head].data[x] = 0; /*Socket_Data_In[x]; */
 
@@ -349,28 +341,6 @@ the machine you will be emulating on. */
       } /* end if socket active */
     } /* end if sio int */
 
-    // here check and handle console keyboard input
-    if(kbhit())
-    {
-      activity2 = 100;
-      key=getchar();
-      if(key == 0x0a) key=0x0d;
-      if(key == 0x7f) key=0x08;
-#ifdef TNCEMUDEBUG
-      if(key == '&') RxCharIn_Idx=1; // Trigger to inject test ax25 packet
-      else
-      {
-#endif
-        // add to key buffer
-        keybuf[keyhead] = key;
-        keyhead++;
-        keyhead &= 0x0f;
-#ifdef TNCEMUDEBUG
-        printf("got key %c\n",(char) key);
-      }
-#endif
-    }
-
     if(oldptt != (sioa.registers[5] & 2))
     {
       oldptt = sioa.registers[5] & 2;
@@ -379,24 +349,9 @@ the machine you will be emulating on. */
 #endif
       if(oldptt == 2)
       {
-        txundr_count=10; 
+        txundr_count=10;
         Ax25_Out_Cnt=0;
       }
-    }
-
-/* Here check activity and if none sleep so we're not a cpu hog */
-    if(Ax25_In_HasData() || RxCharIn_Idx || ax25rdy || feedflag || abortflag ) activity = 0;
-    if(txundr_count ) activity = 0;
-    if(keyhead != keytail) activity = 0;
-
-    //if(activity > 10000) usleep(10000);
-/*                else activity++; */
-/* Enable to stop even more cpu use*/
-    else
-    { 
-      //if(activity > 1) usleep(2000);
-      if(activity2) activity2--;
-        else activity++;
     }
 
 #ifdef TNCEMUDEBUG
@@ -479,7 +434,6 @@ int IO_in (int port)
       x=0xff;
       if(RxCharIn_Idx) 
       {
-        activity = 0;
         x = Ax25_In_Q[Ax25_In_Tail].data[RxCharIn_Idx-1];
 //printf("%x\n",x);
         RxCharIn_Idx++;
@@ -497,13 +451,19 @@ int IO_in (int port)
       break;
 
     case 0x1A: // SIOB Data
-      x=0xff;
-      if(keyhead != keytail)
+      if( !tty_getch(&tty[0], &x) )
       {
-        x=keybuf[keytail];
-        keytail++;
-        keytail &= 0x0f;
+        if( !tty_getch(&tty[1], &x) )
+        {
+          x = 0xff;
+        }
       }
+      /* some key translations are they needed? */
+      if(x == 0x0a) x=0x0d;
+      if(x == 0x7f) x=0x08;
+#ifdef TNCEMUDEBUG
+      if(x == '&') RxCharIn_Idx=1; // Trigger to inject test ax25 packet
+#endif
       break;
 
     case 0x1B: // SIOB Cmd
@@ -561,8 +521,8 @@ void IO_out (int port, int x)
       break;
 
     case 0x1A: // SIOB Data
-      printf("%c",x);
-      activity = 0;
+      tty_write_char(&tty[0], x);
+      tty_write_char(&tty[1], x);
       break;
 
     case 0x1B: // SIOB Cmd
@@ -646,7 +606,8 @@ int val = 0;
       if(sio == &siob )
       {
         val = 0x2c; /* set CTS, DCD, TBUF_EMPTY always */
-        if(keyhead != keytail) val |=1; /* if keys in buffer set flag we have rx chars */  
+        if(tty_peek(&tty[0])) val |=1; /* if keys in buffer set flag we have rx chars */  
+        if(tty_peek(&tty[1])) val |=1; /* if keys in buffer set flag we have rx chars */  
       }
       else /* handle sioa */
       {
@@ -734,11 +695,6 @@ void Memory_Write_Word(unsigned int address, unsigned int data)
     if( ((address+1) & 0xffff) > 0x7fff)                                	
     Ram[(address + 1) & 0x7fff] = data >> 8; 
   }
-}
-
-int kbhit()
-{
-
 }
 
 // Convert int to bcd 
