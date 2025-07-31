@@ -11,6 +11,8 @@
 #include "ax25.h"
 //#include "cmd.h"
 
+#include "sio.h"
+
 // number of ports
 #define PORT_N 1    // number of ports, 1..3
 
@@ -50,6 +52,28 @@
 #define KISS_PACKET_LEN 1024                // kiss packet length
 #define TTY_N 3                             // number of serial
 #define CMD_BUF_LEN 255
+
+#define VERSION_INFO "1.0"
+
+/* Additional Z80_STATE status flag to request emulation termination. */
+#define FLAG_STOP_EMULATION     (1 << 31)
+//#define TNCEMUDEBUG 1
+
+/* Emulation Defines */
+#define Z80_CPU_SPEED           8195200   /* In Hz. */
+#define CYCLES_PER_STEP         (Z80_CPU_SPEED / 25)
+#define CYCLES_PER_INT		2000 /*Cycles to run for each int processing */
+#define DEFAULT_BBS_MSG "Happy if u post msg"
+
+
+
+/* Rom image is externally linked in. */
+extern unsigned char _binary_hk21rom_bin_start;
+extern unsigned char _binary_hk21rom_bin_end;
+extern unsigned char _binary_hk21rom_bin_size;
+
+/* Rom Image for Tnc Emulator */
+extern unsigned char *Rom;
 
 
 enum STATE {
@@ -170,6 +194,31 @@ extern tnc_t tnc[];
 extern uint32_t __tnc_time;
 
 void tnc_init(void);
+void tnc_emulate(void);
+int IO_in (int);
+void IO_out (int, int);
+void SIO_Reset( IC_SIO *);
+int SIO_Cmd_Read( IC_SIO *);
+unsigned int Memory_Read_Byte(unsigned int);
+unsigned int Memory_Read_Word(unsigned int);
+void Memory_Write_Byte(unsigned int, unsigned int);
+void Memory_Write_Word(unsigned int, unsigned int);
+int kbhit(void);
+char tobcd(unsigned int);
+bool Ax25_In_HasRoom(void);
+void Ax25_In_Insert(void);
+void Ax25_In_Remove(void);
+bool Ax25_In_HasData(void);
+
+/* for tncemu ax25 queue*/
+#define BUFLEN 2048	//Max length of buffer
+#define AX25_IN_MAXSIZE 10
+
+struct inQueue {
+unsigned char data[BUFLEN];
+unsigned int count;
+};
+
 
 inline uint32_t tnc_time(void)
 {
