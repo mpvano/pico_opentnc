@@ -19,4 +19,5 @@ make -j4
 (flash 'pico_tnc/pico_tnc.uf2' file to your Pico)
 ```
 ![bell202-wave](bell202-wave.png)
+![terminal-scrren](command.png)
 [![schemantic](schematic.jpg)](schematic.png)
