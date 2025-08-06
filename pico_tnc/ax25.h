@@ -35,7 +35,26 @@ typedef struct CALLSIGN {
     uint8_t ssid;
 } callsign_t;
 
+/* for tncemu ax25 queue*/
+#define BUFLEN 2048	//Max length of buffer
+#define AX25_IN_MAXSIZE 10
+
+struct inQueue {
+unsigned char data[BUFLEN];
+unsigned int count;
+};
+
+/* Input Queue to stack multiple incoming packets */
+extern struct inQueue Ax25_In_Q[AX25_IN_MAXSIZE];
+extern unsigned int Ax25_In_Head;
+extern unsigned int Ax25_In_Tail;
+
+void ax25_init_Q(void);
 int ax25_fcs(uint32_t crc, const uint8_t const *data, int size);
 bool ax25_callcmp(callsign_t *c, uint8_t *addr);
 void ax25_mkax25addr(uint8_t *addr, callsign_t *c);
 bool ax25_ui(uint8_t *packet, int len);
+bool ax25_InQ_HasRoom(void);
+void ax25_InQ_Insert(const uint8_t packet[], int length);
+void ax25_InQ_Remove(void);
+bool ax25_InQ_HasData(void);

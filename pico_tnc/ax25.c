@@ -33,6 +33,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "ax25.h"
 
+
+/* Input Queue to stack multiple incoming packets */
+struct inQueue Ax25_In_Q[AX25_IN_MAXSIZE];
+unsigned int Ax25_In_Head;
+unsigned int Ax25_In_Tail;
+
 //#ifdef RASPBERRYPI_PICO
 #ifdef PICO_DEFAULT_UART
 
@@ -143,3 +149,51 @@ bool ax25_ui(uint8_t *packet, int len)
 
     return packet[i] == 0x03 && packet[i+1] == 0xf0; // true if UI packet
 }
+
+void ax25_init_Q(void)
+{
+    Ax25_In_Head = 0;
+    Ax25_In_Tail = 0;
+}
+
+bool ax25_InQ_HasRoom(void)
+{
+  int next = Ax25_In_Head + 1;
+  if(next >= AX25_IN_MAXSIZE) 
+    next = 0;
+
+  if(next == Ax25_In_Tail)
+    return false;
+  else
+    return true;
+}
+
+void ax25_InQ_Insert(const uint8_t packet[], int length)
+{
+    /* use length - 2 to remove crc bytes */
+    int datalen = length - 2;
+
+    for(int x=0; x < datalen; x++)
+    { 
+        Ax25_In_Q[Ax25_In_Head].data[x] = packet[x]; /*Socket_Data_In[x]; */
+    }
+    Ax25_In_Q[Ax25_In_Head].count = datalen;
+
+    if(++Ax25_In_Head >= AX25_IN_MAXSIZE) 
+    Ax25_In_Head = 0;
+}
+
+void ax25_InQ_Remove(void)
+{
+  if(++Ax25_In_Tail >= AX25_IN_MAXSIZE) 
+    Ax25_In_Tail = 0;
+}
+
+bool ax25_InQ_HasData(void)
+{
+  if(Ax25_In_Head != Ax25_In_Tail)
+    return(true);
+  else
+    return(false);
+}
+
