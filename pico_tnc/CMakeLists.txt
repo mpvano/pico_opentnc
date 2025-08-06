@@ -57,6 +57,7 @@ target_link_libraries(pico_tnc
     hardware_pwm
     hardware_uart
     hardware_pio
+    hardware_rtc
     z80emu
 )
 
