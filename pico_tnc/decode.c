@@ -116,12 +116,13 @@ static void output_packet(tnc_t *tp)
     // FCS check
     if (ax25_fcs(0, data, len) != FCS_OK) return;
 
-    // count received packet
-    ++tp->pkt_cnt;
+    // Here check if ax25 Input Queue has room and if so insert
+    if(ax25_InQ_HasRoom()) ax25_InQ_Insert(data, len);
 
     for (int i = TTY_USB; i <= TTY_UART0; i++) {
         tty_t *ttyp = &tty[i];
 
+        param.mon = MON_OFF;
         // TNC MONitor command
         switch (param.mon) {
             case MON_ALL:
