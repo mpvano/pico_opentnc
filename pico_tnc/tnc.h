@@ -61,11 +61,11 @@
 
 /* Emulation Defines */
 #define Z80_CPU_SPEED           8195200   /* In Hz. */
-#define CYCLES_PER_STEP         (Z80_CPU_SPEED / 25)
-#define CYCLES_PER_INT		2000 /*Cycles to run for each int processing */
+#define CYCLES_PER_PASS         (Z80_CPU_SPEED / 400)
+#define CYCLES_PER_INT		    (CYCLES_PER_PASS / 10) /*Cycles to run for each int processing */
 #define DEFAULT_BBS_MSG "Happy if u post msg"
-
-
+#define TIMER_TIME_10MS (10 * 1000)    // 10 ms = 10 * 1000 us
+#define TIME_1SECOND 1000000 // 1 million us = 1 second
 
 /* Rom image is externally linked in. */
 extern unsigned char _binary_hk21rom_bin_start;
@@ -74,7 +74,6 @@ extern unsigned char _binary_hk21rom_bin_size;
 
 /* Rom Image for Tnc Emulator */
 extern unsigned char *Rom;
-
 
 enum STATE {
 	FLAG,
@@ -113,9 +112,6 @@ typedef struct TNC {
     int32_t pll_counter;
     uint8_t pval;
     uint8_t nrzi;
-
-    // output_packet
-    int pkt_cnt;
 
     // bell202_decode
     int delayed[DELAYED_N];
@@ -205,20 +201,8 @@ void Memory_Write_Byte(unsigned int, unsigned int);
 void Memory_Write_Word(unsigned int, unsigned int);
 int kbhit(void);
 char tobcd(unsigned int);
-bool Ax25_In_HasRoom(void);
-void Ax25_In_Insert(void);
-void Ax25_In_Remove(void);
-bool Ax25_In_HasData(void);
-
-/* for tncemu ax25 queue*/
-#define BUFLEN 2048	//Max length of buffer
-#define AX25_IN_MAXSIZE 10
-
-struct inQueue {
-unsigned char data[BUFLEN];
-unsigned int count;
-};
-
+void RewriteBbsMsg(int addr, char *txt );
+unsigned int GetNextBbsMsgNo(void);
 
 inline uint32_t tnc_time(void)
 {

@@ -26,6 +26,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include <stdio.h>
+#include "pico/stdlib.h"
+#include "hardware/rtc.h"
 
 #include "tnc.h"
 #include "z80emu.h"
@@ -33,6 +35,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "ax25.h"
 #include "flash.h"
 #include "tty.h"
+#include "send.h"
 
 uint32_t __tnc_time;
 
@@ -54,14 +57,12 @@ int rxcnt;
 
 /* Output Buffer */
 unsigned char Ax25_Out[BUFLEN];
-unsigned int  Ax25_In_Cnt, Ax25_Out_Cnt;
-
-/* Input Queue to stack multiple incoming packets */
-struct inQueue       Ax25_In_Q[AX25_IN_MAXSIZE];
-unsigned int  Ax25_In_Head = 0;
-unsigned int  Ax25_In_Tail = 0;
+unsigned int  Ax25_Out_Cnt;
 unsigned int  Ax25_In_Dly = 0;
 
+unsigned int PrevbbsMsgNo;
+unsigned int clock_address = 0; /* Clock stucture in TNC Ram */
+unsigned int bbsmsg_address = 0;
 
 param_t param = {
     .mycall = { 0, 0, },
@@ -91,6 +92,43 @@ Z80_STATE       state;
 
 void tnc_init(void)
 {
+    /* Init ax25 Receive Q pointers */
+    ax25_init_Q();
+
+    rtc_init(); // Initialize the RTC
+
+    clock_address = 0x4f0a; /* Where tnc keeps time */
+    bbsmsg_address = 0x4f06; /* where tnc stores msg count */
+
+    /* Patch for rom we can manually patch later, Needed? */
+//  Rom[0x5032] = Rom[0x5041];
+    Rom[0x5032] = 0x3e;
+
+    /* Stuff NOPs to disable strange obfuscation of text */
+    for(int x=0; x< 11; x++) Rom[0x47f7+x] = 0;
+    Rom[0x47f7+12] = 0;
+
+    char NewBBsMsg[] = DEFAULT_BBS_MSG;
+    /* Throw some custom text into eprom for when user logs into bbs */
+    /* Replaces "Heath System" */
+    RewriteBbsMsg(0x2dad, NewBBsMsg);
+
+    /* initialize the previous bbs msg # to current in memory
+   for later comparison to see if a msg was added */
+    PrevbbsMsgNo = GetNextBbsMsgNo();
+
+    // Set a dummy time if the RTC is not already set (optional, for testing)
+    datetime_t initial_time = {
+        .year = 2025,
+        .month = 8,
+        .day = 6,
+        .dotw = 3, // Wednesday
+        .hour = 12,
+        .min = 0,
+        .sec = 0
+    };
+    rtc_set_datetime(&initial_time);
+
     // filter initialization
     // LPF
     static const filter_param_t flt_lpf = {
@@ -151,7 +189,7 @@ void tnc_init(void)
     //printf("DELAYED_N = %d\n", DELAYED_N);
 
     // read flash
-    flash_read(&param, sizeof(param));
+    //flash_read(&param, sizeof(param));
 
     // set kiss txdelay
     if (param.txdelay > 0) {
@@ -181,11 +219,14 @@ void tnc_emulate(void)
 {
     tnc_t *tp = &tnc[0];
 
-#ifdef TNCEMUDEBUG
+    uint32_t ts = time_us_32();
+    uint32_t cs = time_us_32();
+
+    #ifdef TNCEMUDEBUG
     printf("PC=%x cycles=%.0f\n",state.pc,total);
     cycles = Z80Emulate(&state, 1);
 #endif
-    cycles = Z80Emulate(&state, CYCLES_PER_STEP);
+    cycles = Z80Emulate(&state, CYCLES_PER_PASS);
     total += cycles;
     timer_int += cycles;
     sio_int += cycles;
@@ -193,30 +234,36 @@ void tnc_emulate(void)
 /* Every so many cycles do a timer interrupt, highly inacurate but it
 doesn't matter since we don't rely on it anymore. This could be done
 better but for now it works */
-    if( timer_int > 2750200 )
+    if( timer_int > 275000 )
+    // if (time_us_32() - ts >= TIMER_TIME_10MS)
     {
+    //   ts += TIMER_TIME_10MS;
       timer_int = 0;
       total += Z80Interrupt (&state, 0x10 );
+    // }
+ 
+    // /* Every second update our clock from pico rtc */
+    // if (time_us_32() - cs >= TIME_1SECOND)
+    // {
+      cs += TIME_1SECOND;
+
+      datetime_t current_time;
+      rtc_get_datetime(&current_time);
 
       /* here update tnc time with our time if we can */
-    //   if( clock_address > 0 )
-    //   {
-    //     time(&rawtime);
-    //     timeinfo = localtime (&rawtime);
-    //     x= timeinfo->tm_sec;
-    //     Ram[clock_address] = tobcd(x);
-    //     x= timeinfo->tm_min;
-    //     Ram[clock_address+1] = tobcd(x);
-    //     x= timeinfo->tm_hour;
-    //     Ram[clock_address+2] = tobcd(x);
-    //     x= timeinfo->tm_mday;
-    //     Ram[clock_address+3] = tobcd(x);
-    //     x= timeinfo->tm_mon;
-    //     Ram[clock_address+4] = tobcd(x+1);
-    //     x= timeinfo->tm_year;
-    //     x= x - ((x / 100) * 100);
-    //     Ram[clock_address+5] = tobcd(x);
-    //   }
+      unsigned int x= current_time.sec;
+      Ram[clock_address] = tobcd(x);
+      x= current_time.min;
+      Ram[clock_address+1] = tobcd(x);
+      x= current_time.hour;
+      Ram[clock_address+2] = tobcd(x);
+      x= current_time.day;
+      Ram[clock_address+3] = tobcd(x);
+      x= current_time.month;
+      Ram[clock_address+4] = tobcd(x+1);
+      x= current_time.year;
+      x= x - ((x / 100) * 100);
+      Ram[clock_address+5] = tobcd(x);
 
       /* Check if any new bbs msgs have arrived and if so save ram to disk */
     //   if( PrevbbsMsgNo != GetNextBbsMsgNo())
@@ -231,7 +278,7 @@ the machine you will be emulating on. */
 #ifdef SPEED_PI
     if( sio_int > 115004 ) /* on pi3 */
 #else
-    if( sio_int > 215004 ) /* on fast x86 */
+    if( 1 ) /* on fast x86 */
 #endif
     {
       flop = flop ^0x01;
@@ -267,14 +314,8 @@ the machine you will be emulating on. */
               feedflag = 1; /* txunderrun we can send packet!*/
               if(Ax25_Out_Cnt)
               {
-            //     mycrc = compute_crc(Ax25_Out, Ax25_Out_Cnt);
-            //     Ax25_Out[Ax25_Out_Cnt++] = mycrc & 0xFF;
-            //     Ax25_Out[Ax25_Out_Cnt++] = mycrc >> 8;
-
-            //     if ((x = sendto(sock_out, Ax25_Out, Ax25_Out_Cnt, 0,
-            //         servinfo->ai_addr, servinfo->ai_addrlen)) == -1)
-            //       die("Socket Xmit Error!\n");
-               }
+                send_packet(&tnc[0], Ax25_Out, Ax25_Out_Cnt);
+              }
             }
           }
 
@@ -309,36 +350,13 @@ the machine you will be emulating on. */
         else total += Z80Interrupt (&state, siob.registers[2] | 8 );
       }
 
-      if(Ax25_In_HasData() && !RxCharIn_Idx && !ax25rdy && !txundr_count  && !Ax25_In_Dly ) /* do we have a socket */
+      if(ax25_InQ_HasData() && !RxCharIn_Idx && !ax25rdy && !txundr_count  && !Ax25_In_Dly ) /* do we have a socket */
       {
         RxCharIn_Idx = 1; /* Let everyone know */
         Ax25_In_Dly = 75; /* this is an arbitrary delay amount so emulator can process rx packets */
       }
 
       if(Ax25_In_Dly && !RxCharIn_Idx && !txundr_count) Ax25_In_Dly--;
-
-    /* here check if we are in the middle of processing the previous 
-       socket by checking the RxCharIn_Idx & ax25rdy flags! */
-      if(Ax25_In_HasRoom()) /* do we have a socket and room in Ax25 input Queue */
-      { 
-        /* Here we check if there is any incoming data */
-        if (0/*Incoming data from modem */)
-        {
-          for(int x=0; x < rxcnt; x++) 
-          Ax25_In_Q[Ax25_In_Head].data[x] = 0; /*Socket_Data_In[x]; */
-
-          //mycrc = compute_crc(Ax25_In_Q[Ax25_In_Head].data, rxcnt-2);
-#ifdef TNCEMUDEBUG
-          printf("CRC=%2x RxCRC=%x%x head=%d tail=%d\n",mycrc,Ax25_In_Q[Ax25_In_Head].data[rxcnt-1],Ax25_In_Q[Ax25_In_Head].data[rxcnt-2],
-          Ax25_In_Head, Ax25_In_Tail);
-#endif
-          if( mycrc == ( (Ax25_In_Q[Ax25_In_Head].data[rxcnt-1] << 8) + Ax25_In_Q[Ax25_In_Head].data[rxcnt-2] ) ) /* crc check */
-          {
-          Ax25_In_Q[Ax25_In_Head].count = rxcnt-1; /* adjust to get total # of bytes in buffer */
-          Ax25_In_Insert();
-          }
-        }
-      } /* end if socket active */
     } /* end if sio int */
 
     if(oldptt != (sioa.registers[5] & 2))
@@ -440,7 +458,7 @@ int IO_in (int port)
         if(--Ax25_In_Q[Ax25_In_Tail].count == 0) 
         {
           RxCharIn_Idx = 0;
-          Ax25_In_Remove();
+          ax25_InQ_Remove();
           ax25rdy=1;
         }
       }
@@ -711,35 +729,35 @@ char result;
   return result;
 }
 
-bool Ax25_In_HasRoom(void)
+void RewriteBbsMsg(int addr, char *txt )
 {
-  int next = Ax25_In_Head + 1;
-  if(next >= AX25_IN_MAXSIZE) 
-    next = 0;
+  int x;
 
-  if(next == Ax25_In_Tail)
-    return false;
-  else
-    return true;
+  for(x=0; x<22; x++)
+  {
+    Rom[addr+x] = 0x20; // space char
+  }
+
+  Rom[addr+12] = 0; // Plant terminator
+
+  for(x=0; x<12; x++)
+  {
+    if(*txt == 0) break;
+    Rom[addr+x] = *txt++;
+  }
+
+  if(*txt == 0) return;
+
+  for(x=13; x<22; x++)
+  {
+    if(*txt == 0) break;
+    Rom[addr+x] = *txt++;
+  }
 }
 
-void Ax25_In_Insert(void)
+unsigned int GetNextBbsMsgNo(void)
 {
-  if(++Ax25_In_Head >= AX25_IN_MAXSIZE) 
-    Ax25_In_Head = 0;
+  int msg = 0;
+  msg = Ram[bbsmsg_address] + Ram[bbsmsg_address+1] * 256;
+  return msg;
 }
-
-void Ax25_In_Remove(void)
-{
-  if(++Ax25_In_Tail >= AX25_IN_MAXSIZE) 
-    Ax25_In_Tail = 0;
-}
-
-bool Ax25_In_HasData(void)
-{
-  if(Ax25_In_Head != Ax25_In_Tail)
-    return(true);
-  else
-    return(false);
-}
-
