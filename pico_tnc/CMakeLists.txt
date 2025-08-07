@@ -7,8 +7,6 @@ add_executable(pico_tnc
         filter.c
         bell202.c
         ax25.c
-        test.c
-        packet_table.c
         usb_input.c
         usb_output.c
         serial.c
