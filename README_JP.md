@@ -15,17 +15,18 @@ PICO TNC は、Raspberry Pi Pico を使用したアマチュアパケット無�
 - TNC のタイミングやパケット受信に関するテストのさらなる実施
 
 ## ビルド方法
-git clone https://github.com/amedes/pico_tnc.git
-cd pico_tnc
-mkdir build
-cd build
-cmake ..
-make -j4
-（'pico_tnc/pico_tnc.uf2' ファイルを Pico に書き込んでください）
 
+- git clone https://github.com/amedes/pico_tnc.git
+- cd pico_tnc
+- mkdir build
+- cd build
+- cmake ..
+- make -j4
+-（'pico_tnc/pico_tnc.uf2' ファイルを Pico に書き込んでください
 
 ![bell202-wave](bell202-wave.png)  
 ![terminal-screen](command.png)  
 [![schemantic](schematic.jpg)](schematic.png)
+
 
 
