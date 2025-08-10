@@ -171,13 +171,13 @@ bool ax25_InQ_HasRoom(void)
 void ax25_InQ_Insert(const uint8_t packet[], int length)
 {
     /* use length - 2 to remove crc bytes */
-    int datalen = length - 2;
-
-    for(int x=0; x < datalen; x++)
+    for(int x=0; x < length-2; x++)
     { 
         Ax25_In_Q[Ax25_In_Head].data[x] = packet[x]; /*Socket_Data_In[x]; */
     }
-    Ax25_In_Q[Ax25_In_Head].count = datalen;
+
+    /* Tncemu logic needs an extra byte in the length do to processing logic! */
+    Ax25_In_Q[Ax25_In_Head].count = length-1;
 
     if(++Ax25_In_Head >= AX25_IN_MAXSIZE) 
     Ax25_In_Head = 0;
