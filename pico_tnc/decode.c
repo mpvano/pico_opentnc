@@ -39,7 +39,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #define FCS_OK 0x0f47
 //#define FCS_OK (0x0f47 ^ 0xffff)
-#define MIN_LEN (7 * 2 + 1 + 1 + 2) // Address field *2, Control, PID, FCS
+#define MIN_LEN (7 * 2 + 1 /*+ 1*/ + 2) // Address field *2, Control, (OPTIONAL!)PID, FCS
 
 #define STR_LEN 64
 
