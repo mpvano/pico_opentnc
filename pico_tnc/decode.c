@@ -144,9 +144,11 @@ static void decode_bit(tnc_t *tp, int bit)
     tp->flag <<= 1;
     tp->flag |= bit;
 
-    switch (tp->state) {
+    switch (tp->state)
+    {
         case FLAG:
-	    if (tp->flag == AX25_FLAG) { // found flag
+	    if (tp->flag == AX25_FLAG) // found flag
+        {
 	        tp->state = DATA;
 	        tp->data_cnt = 0;
 	        tp->data_bit_cnt = 0;
@@ -155,25 +157,38 @@ static void decode_bit(tnc_t *tp, int bit)
 	    break;
 
         case DATA:
-	    if ((tp->flag & 0x3f) == 0x3f) { // AX.25 flag, end of packet, six continuous "1" bits
+        // AX.25 flag, end of packet, six continuous "1" bits followed by a 0!
+	    if (tp->flag == AX25_FLAG) 
+        {
 	        output_packet(tp);
-	        tp->state = FLAG;
+            /* there could be another frame coming in so continue receive */
+            tp->state = DATA;
+	        tp->data_cnt = 0;
+	        tp->data_bit_cnt = 0;
 	        break;
 	    }
 
-	    if ((tp->flag & 0x3f) == 0x3e) break; // delete bit stuffing bit
+        /* Check for 5 consecutive 1s followed by a 0 (bit stuffing and drop stuffing bit if so )*/
+        if ((tp->flag & 0x3f) == 0x3e) break; // ignore bit stuffing bit
 
+        /* shift bit into byte msbit */
 	    tp->data_byte >>= 1;
-	    tp->data_byte |= bit << 7;
+	    tp->data_byte |= (bit << 7);
+
 	    tp->data_bit_cnt++;
-	    if (tp->data_bit_cnt >= 8) {
-	        if (tp->data_cnt < DATA_LEN) tp->data[tp->data_cnt++] = tp->data_byte;
-            else {
+        if (tp->data_bit_cnt >= 8)  /* got 8 bits for a byte? */
+        {
+	        if (tp->data_cnt < DATA_LEN) 
+            {
+                tp->data[tp->data_cnt++] = tp->data_byte;
+            }
+            else /* abort packet too long! */
+            {
                 printf("packet too long > %d\n", tp->data_cnt);
                 tp->state = FLAG;
                 break;
             }
-	        tp->data_bit_cnt = 0;
+	        tp->data_bit_cnt = 0; /* reset bit counter for next byte */
 	    }
     }
 }
