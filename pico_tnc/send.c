@@ -332,7 +332,7 @@ void send(void)
                     
             case SP_WAIT_CLR_CH:
                 //printf("(%d) send: SP_WAIT_CLR_CH\n", tnc_time());
-                if (tp->kiss_fullduplex || !tp->cdt) {
+                if (tp->ax25_parms[KISS_FULLDUPLEX] || !tp->cdt) {
                     tp->send_state = SP_P_PERSISTENCE;
                     continue;
                 }
@@ -341,7 +341,7 @@ void send(void)
             case SP_P_PERSISTENCE:
                 data = rand();
                 //printf("(%d) send: SP_P_PERSISTENCE, rnd = %d\n", tnc_time(), data);
-                if (data <= tp->kiss_p) {
+                if (data <= tp->ax25_parms[KISS_P]) {
                     tp->send_state = SP_PTT_ON;
                     continue;
                 }
@@ -351,7 +351,7 @@ void send(void)
 
             case SP_WAIT_SLOTTIME:
                 //printf("(%d) send: SP_WAIT_SLOTTIME\n", tnc_time());
-                if (tnc_time() - tp->send_time >= tp->kiss_slottime) {
+                if (tnc_time() - tp->send_time >= tp->ax25_parms[KISS_SLOT]) {
                     tp->send_state = SP_WAIT_CLR_CH;
                     continue;
                 }
@@ -360,7 +360,7 @@ void send(void)
             case SP_PTT_ON:
                 //printf("(%d) send: SP_PTT_ON\n", tnc_time());
                 //gpio_put(tp->ptt_pin, 1);
-                tp->send_len = (tp->kiss_txdelay * 3) / 2 + 1; // TXDELAY * 10 [ms] into number of flags
+                tp->send_len = (tp->ax25_parms[KISS_TXDELAY]  * 3) / 2 + 1; // TXDELAY * 10 [ms] into number of flags
                 tp->send_state = SP_SEND_FLAGS;
                 /* FALLTHROUGH */
 

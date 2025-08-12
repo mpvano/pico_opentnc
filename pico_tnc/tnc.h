@@ -135,11 +135,15 @@ typedef struct TNC {
 
     // send
 
-    // kiss parameter
-    uint8_t kiss_txdelay;
-    uint8_t kiss_p;
-    uint8_t kiss_slottime;
-    uint8_t kiss_fullduplex;
+/* Kiss Parameter Offset defines */
+#define NUMKISSPARMS 5
+#define KISS_TXDELAY 0
+#define KISS_P 1
+#define KISS_SLOT 2
+#define KISS_TXTAIL 3
+#define KISS_FULLDUPLEX 4
+
+    uint8_t ax25_parms[NUMKISSPARMS];
 
     // dac queue
     queue_t dac_queue;

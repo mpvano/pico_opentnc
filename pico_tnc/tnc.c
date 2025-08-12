@@ -64,6 +64,9 @@ unsigned int PrevbbsMsgNo;
 unsigned int clock_address = 0; /* Clock stucture in TNC Ram */
 unsigned int bbsmsg_address = 0;
 
+/* Locations in ram where z80 code stores these parameters */
+unsigned int ax25_parm_location[NUMKISSPARMS-1]= {0x3FDB, 0x4033, 0x4035, 0x3FD7};
+
 param_t param = {
     .mycall = { 0, 0, },
     .unproto = { { 0, 0 }, { 0, 0 }, { 0, 0 }, { 0, 0 }, },
@@ -92,115 +95,128 @@ Z80_STATE       state;
 
 void tnc_init(void)
 {
-    /* Init ax25 Receive Q pointers */
-    ax25_init_Q();
+  int x;
+  /* Init ax25 Receive Q pointers */
+  ax25_init_Q();
 
-    rtc_init(); // Initialize the RTC
+  rtc_init(); // Initialize the RTC
 
-    clock_address = 0x4f0a; /* Where tnc keeps time */
-    bbsmsg_address = 0x4f06; /* where tnc stores msg count */
+  clock_address = 0x4f0a; /* Where tnc keeps time */
+  bbsmsg_address = 0x4f06; /* where tnc stores msg count */
 
-    /* Patch for rom we can manually patch later, Needed? */
+  /* Patch for rom we can manually patch later, Needed? */
 //  Rom[0x5032] = Rom[0x5041];
-    Rom[0x5032] = 0x3e;
+  Rom[0x5032] = 0x3e;
 
-    /* Stuff NOPs to disable strange obfuscation of text */
-    for(int x=0; x< 11; x++) Rom[0x47f7+x] = 0;
-    Rom[0x47f7+12] = 0;
+  /* Stuff NOPs to disable strange obfuscation of text */
+  for(int x=0; x< 11; x++) Rom[0x47f7+x] = 0;
+  Rom[0x47f7+12] = 0;
 
-    char NewBBsMsg[] = DEFAULT_BBS_MSG;
-    /* Throw some custom text into eprom for when user logs into bbs */
-    /* Replaces "Heath System" */
-    RewriteBbsMsg(0x2dad, NewBBsMsg);
-
-    /* initialize the previous bbs msg # to current in memory
-   for later comparison to see if a msg was added */
-    PrevbbsMsgNo = GetNextBbsMsgNo();
-
-    // Set a dummy time if the RTC is not already set (optional, for testing)
-    datetime_t initial_time = {
-        .year = 2025,
-        .month = 8,
-        .day = 6,
-        .dotw = 3, // Wednesday
-        .hour = 12,
-        .min = 0,
-        .sec = 0
-    };
-    rtc_set_datetime(&initial_time);
-
-    // filter initialization
-    // LPF
-    static const filter_param_t flt_lpf = {
-        .size = FIR_LPF_N,
-        .sampling_freq = SAMPLING_RATE,
-        .pass_freq = 0,
-        .cutoff_freq = 1200,
-    };
-    int16_t *lpf_an, *bpf_an;
-
-    lpf_an = filter_coeff(&flt_lpf);
-
-#if 0
-    printf("LPF coeffient\n");
-    for (int i = 0; i < flt_lpf.size; i++) {
-        printf("%d\n", lpf_an[i]);
-    }
-#endif
-    // BPF
-    static const filter_param_t flt_bpf = {
-        .size = FIR_BPF_N,
-        .sampling_freq = SAMPLING_RATE,
-        .pass_freq = 900,
-        .cutoff_freq = 2500,
-    };
-    bpf_an = filter_coeff(&flt_bpf);
-#if 0
-    printf("BPF coeffient\n");
-    for (int i = 0; i < flt_bpf.size; i++) {
-        printf("%d\n", bpf_an[i]);
-    }
-#endif
-    // PORT initialization
-    for (int i = 0; i < PORT_N; i++) {
-        tnc_t *tp = &tnc[i];
-
-        // receive
-        tp->port = i;
-        tp->state = FLAG;
-        filter_init(&tp->lpf, lpf_an, FIR_LPF_N);
-        filter_init(&tp->bpf, bpf_an, FIR_BPF_N);
-
-        // send queue
-        queue_init(&tp->send_queue, sizeof(uint8_t), SEND_QUEUE_LEN);
-        tp->send_state = SP_IDLE;
-
-        tp->cdt = 0;
-        tp->kiss_txdelay = 50;
-        tp->kiss_p = 63;
-        tp->kiss_slottime = 10;
-        tp->kiss_fullduplex = 0;
-
-        // calibrate
-        tp->do_nrzi = true;
-    }
-
-    //printf("%d ports support\n", PORT_N);
-    //printf("DELAYED_N = %d\n", DELAYED_N);
-
-    // read flash
-    //flash_read(&param, sizeof(param));
-
-    // set kiss txdelay
-    if (param.txdelay > 0) {
-        tnc[0].kiss_txdelay = param.txdelay * 2 / 3;
-    }
-
-    /* for now clear ram */
-    for(int x=0; x<sizeof(Ram); x++)
+  /* Read GPIO ? and if set clear ram */
+  if(1)
+  {
+    for(x=0; x<sizeof(Ram); x++)
     {
         Ram[x]=0;
     }
+  }
+  else // read saved ram memory from flash
+  {
+    flash_read(Ram, sizeof(Ram));
+  }
+
+  char NewBBsMsg[] = DEFAULT_BBS_MSG;
+  /* Throw some custom text into eprom for when user logs into bbs */
+  /* Replaces "Heath System" */
+  RewriteBbsMsg(0x2dad, NewBBsMsg);
+
+  /* initialize the previous bbs msg # to current in memory
+  for later comparison to see if a msg was added */
+  PrevbbsMsgNo = GetNextBbsMsgNo();
+
+  // Set a dummy time if the RTC is not already set (optional, for testing)
+  datetime_t initial_time = {
+      .year = 2025,
+      .month = 8,
+      .day = 6,
+      .dotw = 3, // Wednesday
+      .hour = 12,
+      .min = 0,
+      .sec = 0
+  };
+  rtc_set_datetime(&initial_time);
+
+  // filter initialization
+  // LPF
+  static const filter_param_t flt_lpf = {
+      .size = FIR_LPF_N,
+      .sampling_freq = SAMPLING_RATE,
+      .pass_freq = 0,
+      .cutoff_freq = 1200,
+  };
+  int16_t *lpf_an, *bpf_an;
+
+  lpf_an = filter_coeff(&flt_lpf);
+
+#if 0
+  printf("LPF coeffient\n");
+  for (int i = 0; i < flt_lpf.size; i++) {
+      printf("%d\n", lpf_an[i]);
+  }
+#endif
+  // BPF
+  static const filter_param_t flt_bpf = {
+      .size = FIR_BPF_N,
+      .sampling_freq = SAMPLING_RATE,
+      .pass_freq = 900,
+      .cutoff_freq = 2500,
+  };
+  bpf_an = filter_coeff(&flt_bpf);
+#if 0
+  printf("BPF coeffient\n");
+  for (int i = 0; i < flt_bpf.size; i++) {
+      printf("%d\n", bpf_an[i]);
+  }
+#endif
+  // PORT initialization
+  for (x = 0; x < PORT_N; x++) {
+      tnc_t *tp = &tnc[x];
+
+      // receive
+      tp->port = x;
+      tp->state = FLAG;
+      filter_init(&tp->lpf, lpf_an, FIR_LPF_N);
+      filter_init(&tp->bpf, bpf_an, FIR_BPF_N);
+
+      // send queue
+      queue_init(&tp->send_queue, sizeof(uint8_t), SEND_QUEUE_LEN);
+      tp->send_state = SP_IDLE;
+
+      tp->cdt = 0;
+      tp->ax25_parms[KISS_TXDELAY] = 50;
+      tp->ax25_parms[KISS_P] = 63;
+      tp->ax25_parms[KISS_SLOT] = 10;
+      tp->ax25_parms[KISS_TXTAIL] = 0;
+      tp->ax25_parms[KISS_FULLDUPLEX] = 0;
+
+      // calibrate
+      tp->do_nrzi = true;
+  }
+
+  tnc_t *tp = &tnc[0];
+  //printf("%d ports support\n", PORT_N);
+  //printf("DELAYED_N = %d\n", DELAYED_N);
+
+  /* Memorize certain ax25 parms to detect any changes later */
+  for(x=1; x< NUMKISSPARMS-1; x++) /* start 1 skip txdelay for now */
+  {
+    tp->ax25_parms[x] = Ram[ax25_parm_location[x]];
+  }
+
+    // set kiss txdelay
+    // if (param.txdelay > 0) {
+    //     tnc[0].kiss_txdelay = param.txdelay * 2 / 3;
+    // }
 
     /* Reset emulated SIO state machines */
     SIO_Reset(&sioa); /* Reset Emulated Serial i/o a */
@@ -217,6 +233,7 @@ void tnc_init(void)
 /* Run some cycles of emulated tnc */
 void tnc_emulate(void)
 {
+    bool flashUpdate = false;
     tnc_t *tp = &tnc[0];
 
     uint32_t ts = time_us_32();
@@ -234,44 +251,63 @@ void tnc_emulate(void)
 /* Every so many cycles do a timer interrupt, highly inacurate but it
 doesn't matter since we don't rely on it anymore. This could be done
 better but for now it works */
-    if( timer_int > 275000 )
-    // if (time_us_32() - ts >= TIMER_TIME_10MS)
+  if( timer_int > 275000 )
+  // if (time_us_32() - ts >= TIMER_TIME_10MS)
+  {
+  //   ts += TIMER_TIME_10MS;
+    timer_int = 0;
+    total += Z80Interrupt (&state, 0x10 );
+  // }
+
+  // /* Every second update our clock from pico rtc */
+  // if (time_us_32() - cs >= TIME_1SECOND)
+  // {
+    cs += TIME_1SECOND;
+
+    datetime_t current_time;
+    rtc_get_datetime(&current_time);
+
+    /* here update tnc time with our time if we can */
+    unsigned int x= current_time.sec;
+    Ram[clock_address] = tobcd(x);
+    x= current_time.min;
+    Ram[clock_address+1] = tobcd(x);
+    x= current_time.hour;
+    Ram[clock_address+2] = tobcd(x);
+    x= current_time.day;
+    Ram[clock_address+3] = tobcd(x);
+    x= current_time.month;
+    Ram[clock_address+4] = tobcd(x+1);
+    x= current_time.year;
+    x= x - ((x / 100) * 100);
+    Ram[clock_address+5] = tobcd(x);
+
+    /* Check if any new bbs msgs have arrived and if so save ram to disk */
+    if( PrevbbsMsgNo != GetNextBbsMsgNo())
     {
-    //   ts += TIMER_TIME_10MS;
-      timer_int = 0;
-      total += Z80Interrupt (&state, 0x10 );
-    // }
- 
-    // /* Every second update our clock from pico rtc */
-    // if (time_us_32() - cs >= TIME_1SECOND)
-    // {
-      cs += TIME_1SECOND;
-
-      datetime_t current_time;
-      rtc_get_datetime(&current_time);
-
-      /* here update tnc time with our time if we can */
-      unsigned int x= current_time.sec;
-      Ram[clock_address] = tobcd(x);
-      x= current_time.min;
-      Ram[clock_address+1] = tobcd(x);
-      x= current_time.hour;
-      Ram[clock_address+2] = tobcd(x);
-      x= current_time.day;
-      Ram[clock_address+3] = tobcd(x);
-      x= current_time.month;
-      Ram[clock_address+4] = tobcd(x+1);
-      x= current_time.year;
-      x= x - ((x / 100) * 100);
-      Ram[clock_address+5] = tobcd(x);
-
-      /* Check if any new bbs msgs have arrived and if so save ram to disk */
-    //   if( PrevbbsMsgNo != GetNextBbsMsgNo())
-    //   {
-    //       PrevbbsMsgNo = GetNextBbsMsgNo();
-    //       WriteRamfile();
-    //   }
+        PrevbbsMsgNo = GetNextBbsMsgNo();
+        flashUpdate = true;
     }
+
+    /* compare saved kiss parms to ram parms and if chaned update sender parms  */
+    for(x=0; x< NUMKISSPARMS-1; x++)
+    {
+      if(tp->ax25_parms[x] != Ram[ax25_parm_location[x]] )
+      {
+        tp->ax25_parms[x] = Ram[ax25_parm_location[x]];
+        flashUpdate = true;
+      }
+    }
+    if(flashUpdate)
+    {
+      flashUpdate = false;
+      printf("Saving Ram");
+      //if(!flash_write(Ram, 200))
+      //  printf(" Failed!");
+    }
+
+
+  }
 
 /* These values may need to be adjusted depending on the speed of 
 the machine you will be emulating on. */
