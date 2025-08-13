@@ -100,7 +100,7 @@ int main()
         // update watchdog timer
         watchdog_update();
 
-#if 0
+#if 0 /* now done in receive.c receive funtion*/
         // advance tnc time
         if (time_us_32() - ts >= TIME_10MS) {
             ++tnc_time;
@@ -112,22 +112,11 @@ int main()
         tnc_emulate();
         // receive packet
         receive();
-
         // send packet
         send();
-
-        // incoming KISS frame to serial
-        //kiss_input();
-
-        // output KISS frame to serial
-        //kiss_output();
-
         // process uart I/O
         serial_input();
         serial_output();
-
-        // send beacon
-//        beacon();
 
         // calibrate off
 //        calibrate();

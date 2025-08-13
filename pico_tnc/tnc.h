@@ -175,13 +175,6 @@ typedef struct TNC {
     int send_state;
     int send_data;
 
-    // field for test packet
-    int test_state;
-    uint8_t const *ptp;
-    uint8_t const *packet;
-    uint16_t packet_len;
-    int wait_time;
-
     // calibrate
     uint8_t cal_data;
     bool do_nrzi;
@@ -216,40 +209,10 @@ inline uint32_t tnc_time(void)
 // TNC command
 enum MONITOR {
     MON_ALL = 0,
-    MON_ME,
     MON_OFF,
 };
 
-// GPS
-enum GPS_SENTENCE {
-    GPGGA = 0,
-    GPGLL,
-    GPRMC,
-};
-
-#define UNPROTO_N 4
-#define BTEXT_LEN 100
-
-
-// TNC parameter
-typedef struct TNC_PARAM {
-    callsign_t mycall;
-    callsign_t myalias;
-    callsign_t unproto[UNPROTO_N];
-    uint8_t btext[BTEXT_LEN + 1];
-    uint8_t txdelay;
-    uint8_t gps;
-    uint8_t mon;
-    uint8_t digi;
-    uint8_t beacon;
-    uint8_t trace;
-    uint8_t echo;
-} param_t;
-
-extern param_t param;
-
 // tty
-
 enum TTY_MODE {
     TTY_TERMINAL = 0,
     TTY_GPS,
@@ -270,6 +233,9 @@ typedef struct TTY {
 
     uint8_t tty_mode;   // terminal or GPS
     uint8_t tty_serial; // USB, UART0, UART1
+
+    // Decode Monitor
+    uint8_t montype;
 
     tnc_t *tp;          // input/output port No.
 } tty_t;

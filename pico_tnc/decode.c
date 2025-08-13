@@ -122,17 +122,15 @@ static void output_packet(tnc_t *tp)
     for (int i = TTY_USB; i <= TTY_UART0; i++) {
         tty_t *ttyp = &tty[i];
 
-        param.mon = MON_OFF;
+        ttyp->montype = MON_OFF;
         // TNC MONitor command
-        switch (param.mon) {
+        switch (ttyp->montype) {
             case MON_ALL:
                 display_packet(ttyp, tp);
                 break;
-
-            case MON_ME:
-                if (ax25_callcmp(&param.mycall, &data[0])) { // dst addr check
-                    display_packet(ttyp, tp);
-                }
+            
+            default:
+                break;
         }
     }
 }

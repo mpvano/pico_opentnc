@@ -67,20 +67,6 @@ unsigned int bbsmsg_address = 0;
 /* Locations in ram where z80 code stores these parameters */
 unsigned int ax25_parm_location[NUMKISSPARMS-1]= {0x3FDB, 0x4033, 0x4035, 0x3FD7};
 
-param_t param = {
-    .mycall = { 0, 0, },
-    .unproto = { { 0, 0 }, { 0, 0 }, { 0, 0 }, { 0, 0 }, },
-    .myalias = { 0, 0 },
-    .btext = "",
-    .txdelay = 100,
-    .echo = 1,
-    .gps = 0,
-    .trace = 0,
-    .mon = 0,
-    .digi = 0,
-    .beacon = 0,
-};
-
 /* The Emulated TNC has 32k of RAM and 32k of ROM.
    Rom is addressed starting at 0 and Ram at 0x8000 */
 unsigned char *Rom = &_binary_hk21rom_bin_start;
@@ -212,11 +198,6 @@ void tnc_init(void)
   {
     tp->ax25_parms[x] = Ram[ax25_parm_location[x]];
   }
-
-    // set kiss txdelay
-    // if (param.txdelay > 0) {
-    //     tnc[0].kiss_txdelay = param.txdelay * 2 / 3;
-    // }
 
     /* Reset emulated SIO state machines */
     SIO_Reset(&sioa); /* Reset Emulated Serial i/o a */
