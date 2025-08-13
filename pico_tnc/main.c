@@ -58,6 +58,11 @@ int main()
 {
     stdio_init_all();
 
+    // Wait until the USB CDC serial is connected
+    while (!stdio_usb_connected()) {
+        sleep_ms(10);
+    }
+
     if (watchdog_caused_reboot()) {
         printf("Watch Dog Timer Failure\n");
     }
