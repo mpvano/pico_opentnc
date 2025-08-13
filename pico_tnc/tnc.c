@@ -28,6 +28,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdio.h>
 #include "pico/stdlib.h"
 #include "hardware/rtc.h"
+#include "hardware/watchdog.h"
 
 #include "tnc.h"
 #include "z80emu.h"
@@ -99,7 +100,7 @@ void tnc_init(void)
   Rom[0x47f7+12] = 0;
 
   /* Read GPIO ? and if set clear ram */
-  if(1)
+  if(0)
   {
     for(x=0; x<sizeof(Ram); x++)
     {
@@ -189,12 +190,12 @@ void tnc_init(void)
       tp->do_nrzi = true;
   }
 
-  tnc_t *tp = &tnc[0];
   //printf("%d ports support\n", PORT_N);
   //printf("DELAYED_N = %d\n", DELAYED_N);
 
+  tnc_t *tp = &tnc[0];
   /* Memorize certain ax25 parms to detect any changes later */
-  for(x=1; x< NUMKISSPARMS-1; x++) /* start 1 skip txdelay for now */
+  for(x=0; x< NUMKISSPARMS-1; x++) /* start 1 skip txdelay for now */
   {
     tp->ax25_parms[x] = Ram[ax25_parm_location[x]];
   }
@@ -282,12 +283,17 @@ better but for now it works */
     if(flashUpdate)
     {
       flashUpdate = false;
-      printf("Saving Ram");
-      //if(!flash_write(Ram, 200))
-      //  printf(" Failed!");
+
+      /* Disable watchdog during flash writes */
+      watchdog_disable();
+
+      printf("TNCEMU:Saving Ram Data to Flash\n");
+      if(!flash_write(Ram, sizeof(Ram)))
+        printf("Flash Write Failed!");
+
+      // set watchdog, timeout 1000 ms
+      watchdog_enable(1000, true);
     }
-
-
   }
 
 /* These values may need to be adjusted depending on the speed of 
