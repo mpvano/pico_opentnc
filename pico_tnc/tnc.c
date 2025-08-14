@@ -109,7 +109,15 @@ void tnc_init(void)
   }
   else // read saved ram memory from flash
   {
-    flash_read(Ram, sizeof(Ram));
+      printf("TNCEMU:Reading Ram Data from Flash ");
+      int slot = flash_read(Ram, sizeof(Ram));
+      if (slot >= 0) 
+      {
+          printf("slot %d\n", slot);
+      } else 
+      {
+          printf(".\nRead failed!\n");
+      }
   }
 
   char NewBBsMsg[] = DEFAULT_BBS_MSG;
@@ -287,9 +295,15 @@ better but for now it works */
       /* Disable watchdog during flash writes */
       watchdog_disable();
 
-      printf("TNCEMU:Saving Ram Data to Flash\n");
-      if(!flash_write(Ram, sizeof(Ram)))
-        printf("Flash Write Failed!");
+      printf("TNCEMU:Saving Ram Data to Flash ");
+      int slot = flash_write(Ram, sizeof(Ram));
+      if (slot >= 0) 
+      {
+          printf("slot %d\n", slot);
+      } else 
+      {
+          printf(".\nWrite failed!\n");
+      }
 
       // set watchdog, timeout 1000 ms
       watchdog_enable(1000, true);
