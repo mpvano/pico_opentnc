@@ -3,32 +3,31 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-/* Flash storage limits for blob payload */
-#define FLASH_BLOB_MAX_SIZE   (32768u)   /* 32 KiB payload max */
-#define FLASH_SECTOR_SIZE     (4096u)    /* erase granularity */
-#define FLASH_PAGE_SIZE       (256u)     /* program granularity */
+/* Payload size (fixed) */
+#define FLASH_BLOB_PAYLOAD_SIZE   (32768u)   /* 32 KiB payload */
+#define FLASH_SECTOR_SIZE         (4096u)    /* erase granularity */
+#define FLASH_PAGE_SIZE           (256u)     /* program granularity */
 
-/* Magic used to mark valid blob in flash (same as in flash.c) */
+/* Wear leveling region size from END of flash */
+#define FLASH_WL_REGION_SIZE      (512u * 1024u) /* reserve last 512 KB for wear leveling */
+
+/* Derived slot size and count */
+#define SLOT_SIZE  ((FLASH_BLOB_PAYLOAD_SIZE + sizeof(struct flash_blob_header) + FLASH_SECTOR_SIZE - 1) / FLASH_SECTOR_SIZE * FLASH_SECTOR_SIZE)
+#define SLOT_COUNT (FLASH_WL_REGION_SIZE / SLOT_SIZE)
+
+/* Magic for identifying valid blobs */
 #define PICO_MAGIC 0x4f434950u
 #define FLASH_BLOB_HDR_VER 1
 
-/* Stored at the start of reserved flash region */
 struct flash_blob_header {
     uint32_t magic;    /* PICO_MAGIC */
     uint32_t version;  /* FLASH_BLOB_HDR_VER */
     uint32_t length;   /* payload length in bytes */
     uint32_t crc32;    /* CRC32 of payload */
+    uint32_t seq;      /* wear-leveling sequence number */
 };
 
-/* Reads payload into 'data' (up to len bytes).
-   Returns true if valid payload found and CRC verified. */
-bool flash_read(void *data, int len);
-
-/* Writes payload from 'data' (len bytes) into reserved flash region.
-   Erases and programs as needed. Returns true if write succeeded
-   and verification passed. */
-bool flash_write(void *data, int len);
-
-/* Optional: check if a valid blob is stored and return its length.
-   Returns true if valid header+CRC present. */
-bool flash_blob_info(size_t *out_length);
+/* API */
+int flash_read(void *data, int len);
+/* Writes payload, returns slot index (0..SLOT_COUNT-1) on success, -1 on failure */
+int flash_write(void *data, int len);
