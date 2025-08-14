@@ -181,6 +181,10 @@ typedef struct TNC {
     uint32_t cal_time;
     tty_t *ttyp;
 
+    // station and console leds
+    uint8_t conled_pin;
+    uint8_t staled_pin;
+
 } tnc_t;
 
 extern tnc_t tnc[];

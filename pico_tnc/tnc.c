@@ -177,6 +177,15 @@ void tnc_init(void)
   for (x = 0; x < PORT_N; x++) {
       tnc_t *tp = &tnc[x];
 
+      // Console and station leds set gpio pins
+      tp->conled_pin = 6;
+      tp->staled_pin = 7;
+
+      gpio_init(tp->conled_pin);
+      gpio_set_dir(tp->conled_pin, GPIO_OUT);
+      gpio_init(tp->staled_pin);
+      gpio_set_dir(tp->staled_pin, GPIO_OUT);
+
       // receive
       tp->port = x;
       tp->state = FLAG;
@@ -285,9 +294,10 @@ better but for now it works */
       if(tp->ax25_parms[x] != Ram[ax25_parm_location[x]] )
       {
         tp->ax25_parms[x] = Ram[ax25_parm_location[x]];
-        flashUpdate = true;
+        if(x == KISS_TXDELAY) flashUpdate = true; /* only update if this parm is changed */
       }
     }
+
     if(flashUpdate)
     {
       flashUpdate = false;
@@ -308,6 +318,10 @@ better but for now it works */
       // set watchdog, timeout 1000 ms
       watchdog_enable(1000, true);
     }
+
+    /* Here check SIO dtr values and set gpio's for leds according to status */
+    gpio_put(tp->staled_pin, !(sioa.registers[5] & 0x80));
+    gpio_put(tp->conled_pin, !(siob.registers[5] & 0x80));
   }
 
 /* These values may need to be adjusted depending on the speed of 
