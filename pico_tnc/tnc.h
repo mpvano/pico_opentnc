@@ -49,7 +49,6 @@
 
 #define BEACON_PORT 0
 
-#define KISS_PACKET_LEN 1024                // kiss packet length
 #define TTY_N 3                             // number of serial
 #define CMD_BUF_LEN 255
 
