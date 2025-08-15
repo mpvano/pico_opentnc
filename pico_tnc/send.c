@@ -403,7 +403,7 @@ void send(void)
                 //printf("(%d) send: SP_DATA\n", tnc_time());
                 if (!send_byte(tp, tp->send_data, true)) break;
                 if (tp->send_len <= 0) {
-                    tp->send_len = 1;
+                    tp->send_len = (tp->ax25_parms[KISS_TXTAIL]  * 3) / 2 + 1; // TXAIL * 10 [ms] into number of flags
                     tp->send_state = SP_SEND_FLAGS;
                     send_start(tp);
                     continue;
