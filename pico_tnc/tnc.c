@@ -131,7 +131,7 @@ void tnc_init(void)
 
   // Set a dummy time if the RTC is not already set (optional, for testing)
   datetime_t initial_time = {
-      .year = 2025,
+      .year = 2000,
       .month = 8,
       .day = 6,
       .dotw = 3, // Wednesday
@@ -140,6 +140,7 @@ void tnc_init(void)
       .sec = 0
   };
   rtc_set_datetime(&initial_time);
+  Ram[clock_address+5] = 0x20; // Set year in tnc ram
 
   // filter initialization
   // LPF
@@ -266,20 +267,42 @@ better but for now it works */
     datetime_t current_time;
     rtc_get_datetime(&current_time);
 
-    /* here update tnc time with our time if we can */
-    unsigned int x= current_time.sec;
-    Ram[clock_address] = tobcd(x);
-    x= current_time.min;
-    Ram[clock_address+1] = tobcd(x);
-    x= current_time.hour;
-    Ram[clock_address+2] = tobcd(x);
-    x= current_time.day;
-    Ram[clock_address+3] = tobcd(x);
-    x= current_time.month;
-    Ram[clock_address+4] = tobcd(x+1);
-    x= current_time.year;
-    x= x - ((x / 100) * 100);
-    Ram[clock_address+5] = tobcd(x);
+    // Hear check if our Clock's year matches PICO RTC and if not
+    // Update RTC from tncemu's clock.
+    unsigned int x= current_time.year;
+    x = x - ((x / 100) * 100);
+    if( Ram[clock_address+5] != tobcd(x) )
+    {
+      // printf("RTC Before %d:%d:%d:%d:%d\n",current_time.year,current_time.month,current_time.day,
+      //   current_time.hour,current_time.min);
+      current_time.sec = 0;
+      current_time.min = frombcd(Ram[clock_address+1]);
+      current_time.hour = frombcd(Ram[clock_address+2]);
+      current_time.day = frombcd(Ram[clock_address+3]);
+      current_time.month = frombcd(Ram[clock_address+4]) + 1;
+      current_time.year = frombcd(Ram[clock_address+5]) + 2000;
+      rtc_set_datetime(&current_time);
+      // printf("RTC Update %d:%d:%d:%d:%d\n",current_time.year,current_time.month,current_time.day,
+      //   current_time.hour,current_time.min);
+    }
+    else
+    {
+      /* here update tnc time with our pico rtc time */
+      x= current_time.sec;
+      Ram[clock_address] = tobcd(x);
+      x= current_time.min;
+      Ram[clock_address+1] = tobcd(x);
+      x= current_time.hour;
+      Ram[clock_address+2] = tobcd(x);
+      x= current_time.day;
+      Ram[clock_address+3] = tobcd(x);
+      x= current_time.month - 1;
+      Ram[clock_address+4] = tobcd(x+1);
+      // Don't need to update years as they match
+      // x= current_time.year;
+      // x= x - ((x / 100) * 100);
+      // Ram[clock_address+5] = tobcd(x);
+    }
 
     /* Check if any new bbs msgs have arrived and if so save ram to disk */
     if( PrevbbsMsgNo != GetNextBbsMsgNo())
@@ -769,15 +792,16 @@ void Memory_Write_Word(unsigned int address, unsigned int data)
 // Convert int to bcd 
 char tobcd(unsigned int val)
 {
+    if (val < 0 || val > 99) {
+        return 0; // out of range
+    }
+    return (char)(((val / 10) << 4) | (val % 10));
+}
 
-char result;
-
-  val &= 0xFF; // only doing 2 digits
-
-  result = val /10;
-  result <<= 4;
-  result |= val % 10;
-  return result;
+// Convert from BCD
+char frombcd(unsigned int bcd)
+{
+  return (char)(((bcd >> 4) & 0x0F) * 10 + (bcd & 0x0F));
 }
 
 void RewriteBbsMsg(int addr, char *txt )

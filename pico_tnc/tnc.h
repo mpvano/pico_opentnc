@@ -201,6 +201,7 @@ void Memory_Write_Byte(unsigned int, unsigned int);
 void Memory_Write_Word(unsigned int, unsigned int);
 int kbhit(void);
 char tobcd(unsigned int);
+char frombcd(unsigned int bcd);
 void RewriteBbsMsg(int addr, char *txt );
 unsigned int GetNextBbsMsgNo(void);
 
