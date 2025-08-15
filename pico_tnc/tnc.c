@@ -297,7 +297,7 @@ better but for now it works */
       x= current_time.day;
       Ram[clock_address+3] = tobcd(x);
       x= current_time.month - 1;
-      Ram[clock_address+4] = tobcd(x+1);
+      Ram[clock_address+4] = tobcd(x);
       // Don't need to update years as they match
       // x= current_time.year;
       // x= x - ((x / 100) * 100);
