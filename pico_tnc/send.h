@@ -33,6 +33,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #define BYTE_BITS 8
 #define BIT_STUFF_BITS 5
+#define MIN_TAIL_FLAGS 2 // Minimum # of tail flags for reliability.
 
 int send_byte(tnc_t *tp, uint8_t data, bool bit_stuff);
 void send_init(void);
