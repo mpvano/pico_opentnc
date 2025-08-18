@@ -58,10 +58,10 @@ void kiss_packet(tty_t *ttyp)
 
     if (type == 0xff) {
 
-        // exit kiss mode
-        ttyp->kiss_mode = 0;
+        // exit kiss mode if user has flipped the kiss switch 
+        if( gpio_get(KISS_SELECT_GPIO) == true)
+            ttyp->kiss_mode = 0;
         return;
-
     }
 
     if (ttyp->kiss_idx < 2) return;
@@ -163,7 +163,6 @@ void kiss_input(tty_t * ttyp, int ch)
 void kiss_output(tty_t *ttyp, tnc_t *tp)
 {
     int len = Ax25_In_Q[Ax25_In_Tail].count -1;
-    uint8_t *data = Ax25_In_Q[Ax25_In_Tail].data;
 
     // KISS start
     tty_write_char(ttyp, FEND);
@@ -175,7 +174,7 @@ void kiss_output(tty_t *ttyp, tnc_t *tp)
 
     for (int i = 0; i < len; i++) { // FCS Strip'd in ax25 ax25_InQ_Insert
 
-        int ch =  data[i];
+        int ch =  Ax25_In_Q[Ax25_In_Tail].data[i];
 
         switch (ch) {
             case FEND:
