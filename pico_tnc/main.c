@@ -47,6 +47,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "usb_output.h"
 #include "serial.h"
 #include "tty.h"
+#include "kiss.h"
 
 #define TIME_10MS (10 * 1000)    // 10 ms = 10 * 1000 us
 
@@ -56,16 +57,17 @@ static const uint8_t greeting[] =
 
 int main()
 {
+    bool kiss_flash_state = false;
+    uint32_t flash_time = time_us_32();
+
     stdio_init_all();
 
-    // Wait until the USB CDC serial is connected
-    while (!stdio_usb_connected()) {
-        sleep_ms(10);
-    }
-
-    if (watchdog_caused_reboot()) {
-        printf("Watch Dog Timer Failure\n");
-    }
+     // Initialize the kiss mode slect switch pin
+    gpio_init(KISS_SELECT_GPIO);
+    // Set the pin as input
+    gpio_set_dir(KISS_SELECT_GPIO, GPIO_IN);
+    // Enable the internal pull-up resistor
+    gpio_pull_up(KISS_SELECT_GPIO);
 
     // create usb output queue
     usb_output_init();
@@ -78,6 +80,31 @@ int main()
     tty_init();     // should call after tnc_init()
     //bell202_init();
 
+    tty[0].kiss_mode = 0; // default kiss off
+    tty[1].kiss_mode = 0;
+
+
+    // Read it and if 0 set kiss mode.
+    if( gpio_get(KISS_SELECT_GPIO) == false) {
+        tty[0].kiss_mode = 1; // activate kiss
+        tty[1].kiss_mode = 1; // activate kiss
+    }
+    else
+    {
+    // Wait until the USB CDC serial is connected
+        while (!stdio_usb_connected()) {
+            sleep_ms(10);
+        }
+
+        if (watchdog_caused_reboot()) {
+            printf("Watch Dog Timer Failure\n");
+        }
+
+        // output greeting text to both tty's (serial/usb)
+        tty_write_str(&tty[0], greeting);
+        tty_write_str(&tty[1], greeting);
+    }
+
 #ifdef BUSY_PIN
     gpio_init(BUSY_PIN);
     gpio_set_dir(BUSY_PIN, true); // output
@@ -89,10 +116,6 @@ int main()
     gpio_set_dir(SMPS_PIN, true); // output
     gpio_put(SMPS_PIN, 0);
 #endif
-
-    // output greeting text to both tty's (serial/usb)
-    tty_write_str(&tty[0], greeting);
-    tty_write_str(&tty[1], greeting);
 
     //uint32_t ts = time_us_32();
 
@@ -113,8 +136,44 @@ int main()
         }
 #endif
 
-        // Emulate z80 code
-        tnc_emulate();
+        /* Test if in Kiss mode and if not emulate */
+        if(tty[0].kiss_mode == 0 || tty[1].kiss_mode == 0 ) 
+        {
+            // Emulate z80 code
+            tnc_emulate();
+        }
+        else /* kiss mode */
+        {
+            if(ax25_InQ_HasData())
+            {
+                // incoming KISS frame to serial
+                kiss_output(&tty[0],&tnc[0]);
+                kiss_output(&tty[1],&tnc[0]);
+                ax25_InQ_Remove();
+            }
+
+            // incoming KISS frame from serial
+            int ch;
+            if( !tty_getch(&tty[0], &ch) )
+            {
+                if( tty_getch(&tty[1], &ch) )
+                {
+                    kiss_input(&tty[1], ch);
+                }
+            }
+            else
+            {
+                kiss_input(&tty[0], ch);
+            }
+
+            if (time_us_32() - flash_time >= TIME_1SECOND) {
+                flash_time += TIME_1SECOND;
+                kiss_flash_state = ! kiss_flash_state;
+                gpio_put(tnc[0].staled_pin, kiss_flash_state);
+                gpio_put(tnc[0].conled_pin, !kiss_flash_state);
+            }
+        }
+
         // receive packet
         receive();
         // send packet
