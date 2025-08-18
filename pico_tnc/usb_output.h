@@ -26,6 +26,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #pragma once
+
+//#define CHECK_USB_DTR
+
 void usb_output_init(void);
 void usb_output(void);
 void usb_write(uint8_t const *data, int len);

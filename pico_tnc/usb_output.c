@@ -45,7 +45,9 @@ void usb_write(uint8_t const *data, int len)
 {
     int i;
 
+#ifdef CHECK_USB_DTR
     if (!tud_cdc_connected()) return;
+#endif
 
     if (!queue_is_empty(&usb_queue)) {
 
@@ -75,7 +77,9 @@ void usb_write_char(uint8_t ch)
 {
     int i = 0;
 
+#ifdef CHECK_USB_DTR
     if (!tud_cdc_connected()) return;
+#endif
 
     if (!queue_is_empty(&usb_queue)) {
 
@@ -97,7 +101,9 @@ void usb_output(void)
 {
     uint8_t data;
 
+#ifdef CHECK_USB_DTR
     if (!tud_cdc_connected()) return;
+#endif
 
     if (queue_is_empty(&usb_queue)) return;
 
