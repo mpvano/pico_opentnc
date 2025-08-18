@@ -47,8 +47,7 @@
 
 #define BUSY_PIN 22
 
-#define BEACON_PORT 0
-
+#define KISS_PACKET_LEN 1024                // kiss packet length
 #define TTY_N 3                             // number of serial
 #define CMD_BUF_LEN 255
 
@@ -142,6 +141,8 @@ typedef struct TNC {
 #define KISS_TXTAIL 3
 #define KISS_FULLDUPLEX 4
 
+#define KISS_SELECT_GPIO 8 /* IO for switch to put device in kiss */
+
     uint8_t ax25_parms[NUMKISSPARMS];
 
     // dac queue
@@ -229,6 +230,12 @@ enum TTY_SERIAL {
 };
 
 typedef struct TTY {
+    uint8_t kiss_buf[KISS_PACKET_LEN];
+    int kiss_idx;
+    uint8_t kiss_mode;  // kiss mode
+    uint8_t kiss_state; // kiss state
+    uint32_t kiss_timeout; // kiss timer
+
     uint8_t input_buf[CMD_BUF_LEN + 1];
     int inp_head;
     int inp_tail;
