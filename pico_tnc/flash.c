@@ -78,13 +78,40 @@ static int find_latest_slot(uint32_t *out_seq) {
 
 /* Read latest valid payload */
 int flash_read(void *data, int len) {
-    if (!data || len != FLASH_BLOB_PAYLOAD_SIZE) return false;
-    int latest_index = find_latest_slot(NULL);
-    if (latest_index < 0) return -1;
+    if (!data || len != FLASH_BLOB_PAYLOAD_SIZE) return -1;
 
-    const struct flash_blob_header *hdr = (const struct flash_blob_header *)(XIP_BASE + wl_region_base_offset() + latest_index * SLOT_SIZE);
-    memcpy(data, (const uint8_t *)hdr + sizeof(*hdr), hdr->length);
-    return latest_index;
+    int best_idx = -1;
+    uint32_t best_seq = 0;
+
+    for (int i = 0; i < SLOT_COUNT; ++i) {
+        const uint8_t *slot_base = (const uint8_t *)(XIP_BASE + wl_region_base_offset() + i * SLOT_SIZE);
+        const struct flash_blob_header *hdr = (const struct flash_blob_header *)slot_base;
+
+        if (hdr->magic != PICO_MAGIC) continue;
+        if (hdr->version != FLASH_BLOB_HDR_VER) continue;
+        if (hdr->length != FLASH_BLOB_PAYLOAD_SIZE) continue;
+
+        const uint8_t *payload = slot_base + sizeof(*hdr);
+        uint32_t calc = crc32_calc(payload, hdr->length);
+        if (calc != hdr->crc32) continue; // corrupted slot; skip
+
+        if (best_idx < 0 || hdr->seq > best_seq) {
+            best_idx = i;
+            best_seq = hdr->seq;
+        }
+    }
+
+    if (best_idx < 0) {
+        // No valid slots found
+        return -1;
+    }
+
+    const uint8_t *best_base = (const uint8_t *)(XIP_BASE + wl_region_base_offset() + best_idx * SLOT_SIZE);
+    const struct flash_blob_header *best_hdr = (const struct flash_blob_header *)best_base;
+    const uint8_t *best_payload = best_base + sizeof(*best_hdr);
+
+    memcpy(data, best_payload, best_hdr->length);
+    return best_idx;
 }
 
 /* Write payload to next slot */
