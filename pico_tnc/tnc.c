@@ -179,8 +179,8 @@ void tnc_init(void)
       tnc_t *tp = &tnc[x];
 
       // Console and station leds set gpio pins
-      tp->conled_pin = 6;
-      tp->staled_pin = 7;
+      tp->conled_pin = CON_LED_GPIO;
+      tp->staled_pin = STA_LED_GPIO;
 
       gpio_init(tp->conled_pin);
       gpio_set_dir(tp->conled_pin, GPIO_OUT);

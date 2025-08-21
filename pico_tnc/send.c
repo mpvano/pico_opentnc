@@ -43,7 +43,7 @@ static const int ptt_pins[] = {
 
 #define LED_PIN PICO_DEFAULT_LED_PIN
 
-#define ISR_PIN 15
+#define ISR_PIN 19
 
 #define CAL_TIMEOUT (60 * 100)  // 60 sec
 

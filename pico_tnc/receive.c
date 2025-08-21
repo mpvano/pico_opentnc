@@ -91,7 +91,7 @@ static const uint8_t cdt_pins[] = {
 #ifdef PICO_DEFAULT_LED_PIN
     PICO_DEFAULT_LED_PIN,
 #else
-    20, // port 0
+    12, // port 0
 #endif
     21, // port 1
     22, // port 2
