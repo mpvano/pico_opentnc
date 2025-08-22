@@ -88,7 +88,8 @@ static void dma_handler(void) {
 }
 
 static const uint8_t cdt_pins[] = {
-#ifdef PICO_DEFAULT_LED_PIN
+//#ifdef PICO_DEFAULT_LED_PIN
+#ifdef USE_PICO_DEFAULT_PIN
     PICO_DEFAULT_LED_PIN,
 #else
     12, // port 0
