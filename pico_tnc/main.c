@@ -137,7 +137,7 @@ int main()
 #endif
 
         /* Test if in Kiss mode and if not emulate */
-        if(tty[0].kiss_mode == 0 || tty[1].kiss_mode == 0 ) 
+        if(tty[0].kiss_mode == 0 && tty[1].kiss_mode == 0 ) 
         {
             // Emulate z80 code
             tnc_emulate();
@@ -188,8 +188,16 @@ int main()
 #ifdef BUSY_PIN
 //        gpio_put(BUSY_PIN, 0);
 #endif
-        // wait small time
-//        __wfi();
+
+    // if not busy wait small time for next interrupt
+    if(tty[0].kiss_mode == 1 || tty[1].kiss_mode == 1) // always if in Kiss mode
+    {
+        __wfi();
+    }
+    else if(tnc[0].active_timeout == 0)
+    {
+        __wfi();
+    }
 
 #ifdef BUSY_PIN
 //        gpio_put(BUSY_PIN, 1);

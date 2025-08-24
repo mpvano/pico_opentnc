@@ -147,6 +147,9 @@ typedef struct TNC {
 #define PSAVE_SELECT_GPIO 17 /* IO for switch to select Power Savings Mode */
 #define CON_LED_GPIO 14 /* IO for Console LED */
 #define STA_LED_GPIO 15 /* IO for Station LED */
+#define TNC_EMULATING_LED_PIN PICO_DEFAULT_LED_PIN
+
+#define DEFAULT_ACTIVITY_COUNT 1000
 
     uint8_t ax25_parms[NUMKISSPARMS];
 
@@ -189,6 +192,8 @@ typedef struct TNC {
     // station and console leds
     uint8_t conled_pin;
     uint8_t staled_pin;
+
+    int active_timeout;
 
 } tnc_t;
 

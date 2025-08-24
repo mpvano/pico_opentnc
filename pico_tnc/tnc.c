@@ -187,6 +187,12 @@ void tnc_init(void)
       gpio_init(tp->staled_pin);
       gpio_set_dir(tp->staled_pin, GPIO_OUT);
 
+#ifdef TNC_EMULATING_LED_PIN
+      gpio_init(TNC_EMULATING_LED_PIN);
+      gpio_set_dir(TNC_EMULATING_LED_PIN, GPIO_OUT);
+      gpio_put(TNC_EMULATING_LED_PIN,0);
+#endif
+
       // receive
       tp->port = x;
       tp->state = FLAG;
@@ -238,6 +244,7 @@ void tnc_emulate(void)
 
     uint32_t ts = time_us_32();
     uint32_t cs = time_us_32();
+
 
     #ifdef TNCEMUDEBUG
     printf("PC=%x cycles=%.0f\n",state.pc,total);
@@ -389,6 +396,7 @@ the machine you will be emulating on. */
               if(Ax25_Out_Cnt)
               {
                 send_packet(&tnc[0], Ax25_Out, Ax25_Out_Cnt);
+                Ax25_Out_Cnt = 0;
               }
             }
           }
@@ -420,6 +428,7 @@ the machine you will be emulating on. */
 //      {
           total += Z80Interrupt (&state, siob.registers[2] | 4);
 //      }
+          tp->active_timeout = DEFAULT_ACTIVITY_COUNT;
         } 
         else total += Z80Interrupt (&state, siob.registers[2] | 8 );
       }
@@ -442,8 +451,23 @@ the machine you will be emulating on. */
       if(oldptt == 2)
       {
         txundr_count=10;
-        Ax25_Out_Cnt=0;
       }
+    }
+
+    /* Here check status of tnc buffers and if work to do set activity */
+    if(RxCharIn_Idx > 0 || Ax25_Out_Cnt > 0 )
+    {
+      //printf("%d-%d\n",RxCharIn_Idx,Ax25_Out_Cnt);
+      tp->active_timeout = DEFAULT_ACTIVITY_COUNT;
+    }
+
+    /* If activity timer set decrement until 0 */
+    if(tp->active_timeout > 0)
+    {
+      tp->active_timeout--;
+#ifdef TNC_EMULATING_LED_PIN
+      gpio_put(TNC_EMULATING_LED_PIN,1);
+#endif
     }
 
 #ifdef TNCEMUDEBUG
@@ -457,6 +481,10 @@ the machine you will be emulating on. */
     (int) (total / Z80_CPU_SPEED),
     total / ((double) 3600 * Z80_CPU_SPEED));
   }
+#endif
+
+#ifdef TNC_EMULATING_LED_PIN
+    if(tp->active_timeout == 0) gpio_put(TNC_EMULATING_LED_PIN,0);
 #endif
 }
 
@@ -615,6 +643,7 @@ void IO_out (int port, int x)
     case 0x1A: // SIOB Data
       tty_write_char(&tty[0], x);
       tty_write_char(&tty[1], x);
+      tnc[0].active_timeout = DEFAULT_ACTIVITY_COUNT;
       break;
 
     case 0x1B: // SIOB Cmd
