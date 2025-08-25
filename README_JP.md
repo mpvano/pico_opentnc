@@ -16,7 +16,7 @@ PICO TNC は、Raspberry Pi Pico を使用したアマチュアパケット無�
 
 ## ビルド方法
 
-- git clone https://github.com/amedes/pico_tnc.git
+- git clone git clone https://github.com/pfiliberti/pico_tnc.git
 - cd pico_tnc
 - mkdir build
 - cd build
@@ -27,6 +27,7 @@ PICO TNC は、Raspberry Pi Pico を使用したアマチュアパケット無�
 ![bell202-wave](bell202-wave.png)  
 ![terminal-screen](command.png)  
 [![schemantic](schematic.jpg)](schematic.png)
+
 
 
 
