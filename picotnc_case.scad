@@ -64,9 +64,22 @@ led_diameter = 3.0; // 3mm led'scale
 led_clearance = .2;
 led_labels = ["STA", "CON", "DCD", "PTT"];
 
+letterDepth = .5; // Depth of letter cuts
+
 // audio jacks
 audiojack1_offset = 15.7;
 audiojack2_offset = 28.7;
+
+//Mounting holes
+woodscrewHeadRad = 4.6228;  //Number 8 wood screw head radius
+woodscrewThreadRad = 2.1336;    //Number 8 wood screw thread radius
+woodscrewHeadHeight = 2.8448;  //Number 8 wood screw head height
+
+// Print Lid or Box or Both
+build_cover = 1;
+build_box = 1;
+mountingHoles = 0;
+
 
 // end params
 
@@ -79,7 +92,7 @@ ext_h= int_h + th+3 + th;
 
 
 module pcb_model() {
-    if(showpcb > 0) {
+    if(showpcb) {
         import(pcbfilename);
     }
 }
@@ -112,6 +125,31 @@ module box(){
 			translate([-e,e+li-2*th-2,h-3])cube([th+2+2*e,2*th+2+2*e,5]);
 		}
 	}
+    //Bumper mounting holes (exterior)
+    if( mountingHoles ) {
+        bumperHeight = 4;
+        holeDepth = 10;
+      difference() {  
+        hull() {
+          translate([-w/2 -6 -th*2, 0, -th])
+            cylinder( r = 6, h = 2, $fn = 32 );
+          translate([ -w/2-th*2, -6, -th])
+            cube([0.5, 12, bumperHeight]);
+        }
+        translate([-w/2-6 -th*2, 0, -th])
+          mountingHole(holeDepth = bumperHeight);
+      }
+      difference() {  
+        hull() {
+          translate([w/2 + 6 + th*2, 0, -th])
+            cylinder( r = 6, h =  2, $fn = 32 );
+          translate([ w/2+th*2, -6, -th]) 
+            cube([0.5, 12, bumperHeight]);
+          }
+        translate([w/2 + 6 + th*2, 0, -th])
+          mountingHole(holeDepth = bumperHeight);
+      }
+    }
 }
 
 module cover(){
@@ -180,7 +218,7 @@ module led_holes(count=4) {
             rotate([270, 0, 90])
                 cylinder(h=th+2, r=(led_diameter + led_clearance)/2);
 
-        translate([-int_w/2-th+.3, int_l/2 - led_offset + i*led_spacing + led_diameter/2, int_h -1])
+        translate([-int_w/2-th+letterDepth, int_l/2 - led_offset + i*led_spacing + led_diameter/2, int_h -1])
         rotate([0, 90, 180])  // orient text to face front
             linear_extrude(height=2.0)
                 text(led_labels[i], size=3, font="Liberation Sans:style=Bold");
@@ -197,13 +235,13 @@ module audio_jacks()
 {
         translate([-int_w/2+1, int_l/2 - audiojack1_offset, int_h/2-pcb_thickness])
         audio_jack_hole();
-        translate([-int_w/2-th+.3, int_l/2 - audiojack1_offset + 3.5, int_h/2+4])
+        translate([-int_w/2-th+letterDepth, int_l/2 - audiojack1_offset + 3.5, int_h/2+4])
         rotate([90, 0, 270])  // orient text to face front
             linear_extrude(height=2.0)
                 text("TTL", size=3, font="Liberation Sans:style=Bold");
         translate([-int_w/2+1, int_l/2 - audiojack2_offset, int_h/2 + .5 -pcb_thickness])
         audio_jack_hole();
-        translate([-int_w/2-th+.3, int_l/2 - audiojack2_offset + 3.5, int_h/2+4])
+        translate([-int_w/2-th+letterDepth, int_l/2 - audiojack2_offset + 3.5, int_h/2+4])
         rotate([90, 0, 270])  // orient text to face front
             linear_extrude(height=2.0)
                 text("RIG", size=3, font="Liberation Sans:style=Bold");
@@ -230,27 +268,41 @@ module sidecutouts()
     
 }
 
-
-
-
-difference(){
-box();
-// holes for led's
-led_holes();
-// audio jacks
-audio_jacks();
-// side cuts
-sidecutouts();
+module mountingHole(screwHeadRad = woodscrewHeadRad, screwThreadRad = woodscrewThreadRad, screwHeadHeight = woodscrewHeadHeight, holeDepth = 10) {
+  union() {
+    translate([0, 0, -0.01])
+      cylinder( r = screwThreadRad, h = 1.02, $fn = 32 );
+    translate([0, 0, 1])
+      cylinder( r1 = screwThreadRad, r2 = screwHeadRad, h = screwHeadHeight, $fn = 32 );
+    translate([0, 0, screwHeadHeight - 0.01 + 1])
+      cylinder( r = screwHeadRad, h = holeDepth - screwHeadHeight + 0.02, $fn = 32 );
+  }
 }
 
-pcb_feet();
+
+if(build_box) {
+  difference(){
+  box();
+  // holes for led's
+  led_holes();
+  // audio jacks
+  audio_jacks();
+  // side cuts
+  sidecutouts();
+  }
+  pcb_feet();
+  
+
 // --- PCB placement for reference ---
 // Display  the PCB inside the case
-if(showpcb > 0) {
-translate([-pcb_width/2-th-.5, pcb_depth/2+(li-pcb_depth)/2-.5, pcb_foot_h])
-pcb_model();
+  if(showpcb) {
+  translate([-pcb_width/2-th-.5, pcb_depth/2+(li-pcb_depth)/2-.5, pcb_foot_h])
+  pcb_model();
+  }
 }
 
+if(build_cover) {
 // cover
 translate([0,li+3+2*th,0])
 	cover();
+}
