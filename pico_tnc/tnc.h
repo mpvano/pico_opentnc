@@ -61,7 +61,8 @@
 #define Z80_CPU_SPEED           8195200   /* In Hz. */
 #define CYCLES_PER_PASS         (Z80_CPU_SPEED / 400)
 #define CYCLES_PER_INT		    (CYCLES_PER_PASS / 10) /*Cycles to run for each int processing */
-#define DEFAULT_BBS_MSG "Happy if u post msg"
+//#define DEFAULT_BBS_MSG "Happy if u post msg"
+#define DEFAULT_BBS_MSG   "New? Read INFO msg."
 #define TIMER_TIME_10MS (10 * 1000)    // 10 ms = 10 * 1000 us
 #define TIME_1SECOND 1000000 // 1 million us = 1 second
 
