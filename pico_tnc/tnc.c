@@ -356,84 +356,79 @@ void tnc_emulate(void)
     gpio_put(tp->conled_pin, !(siob.registers[5] & 0x80));
   }
 
-/* These values may need to be adjusted depending on the speed of 
-the machine you will be emulating on. */
-    if( 1 ) /* on fast x86 */
+    flop = flop ^0x01;
+    if(flop)
     {
-      flop = flop ^0x01;
-      if(flop)
+
+      if(RxCharIn_Idx || ax25rdy)
       {
-
-        if(RxCharIn_Idx || ax25rdy)
+        if(RxCharIn_Idx)
         {
-          if(RxCharIn_Idx)
-          {
-            while(!state.iff1) cycles = Z80Emulate(&state, CYCLES_PER_INT );
-            cycles += Z80Interrupt (&state, siob.registers[2] | 0x0c);   // ax25 char read int
-            total += cycles;
-          }
+          while(!state.iff1) cycles = Z80Emulate(&state, CYCLES_PER_INT );
+          cycles += Z80Interrupt (&state, siob.registers[2] | 0x0c);   // ax25 char read int
+          total += cycles;
+        }
 
-          if(ax25rdy)
+        if(ax25rdy)
+        {
+          while(!state.iff1) cycles = Z80Emulate(&state, CYCLES_PER_INT );
+          cycles += Z80Interrupt (&state, siob.registers[2] | 0x0e); // eof int
+          total += cycles;
+        }
+      }
+      else
+      {
+        if(txundr_count)
+        {
+          txundr_count--;
+          if(!txundr_count)
           {
-            while(!state.iff1) cycles = Z80Emulate(&state, CYCLES_PER_INT );
-            cycles += Z80Interrupt (&state, siob.registers[2] | 0x0e); // eof int
-            total += cycles;
+            feedflag = 1; /* txunderrun we can send packet!*/
+            if(Ax25_Out_Cnt)
+            {
+              send_packet(&tnc[0], Ax25_Out, Ax25_Out_Cnt);
+              Ax25_Out_Cnt = 0;
+            }
           }
+        }
+
+        if(feedflag || abortflag )
+        {
+          while(!state.iff1) cycles = Z80Emulate(&state, CYCLES_PER_INT );
+          cycles += Z80Interrupt (&state, siob.registers[2] | 0x0a); // ext stat int
+          total += cycles;
         }
         else
         {
-          if(txundr_count)
+          if(siob.registers[1] & 2)
           {
-            txundr_count--;
-            if(!txundr_count)
-            {
-              feedflag = 1; /* txunderrun we can send packet!*/
-              if(Ax25_Out_Cnt)
-              {
-                send_packet(&tnc[0], Ax25_Out, Ax25_Out_Cnt);
-                Ax25_Out_Cnt = 0;
-              }
-            }
-          }
-
-          if(feedflag || abortflag )
-          {
-            while(!state.iff1) cycles = Z80Emulate(&state, CYCLES_PER_INT );
-            cycles += Z80Interrupt (&state, siob.registers[2] | 0x0a); // ext stat int
+        // while(!state.iff1) total += Z80Emulate(&state, CYCES_PER_INT );
+            cycles = Z80Interrupt (&state, siob.registers[2] );
             total += cycles;
-          }
-          else
-          {
-            if(siob.registers[1] & 2)
-            {
-          // while(!state.iff1) total += Z80Emulate(&state, CYCES_PER_INT );
-              cycles = Z80Interrupt (&state, siob.registers[2] );
-              total += cycles;
-            }
           }
         }
       }
-      else /* flip */
+    }
+    else /* flip */
+    {
+      if( tty_peek(&tty[0]) || tty_peek(&tty[1] ) )
       {
-        if( tty_peek(&tty[0]) || tty_peek(&tty[1] ) )
-        {
 // This breaks inital autobaud!   if(state.iff1 && (siob.registers[1] & 0x18) )
 //      {
-          total += Z80Interrupt (&state, siob.registers[2] | 4);
+        total += Z80Interrupt (&state, siob.registers[2] | 4);
 //      }
-          tp->active_timeout = DEFAULT_ACTIVITY_COUNT;
-        } 
-        else total += Z80Interrupt (&state, siob.registers[2] | 8 );
-      }
+        tp->active_timeout = DEFAULT_ACTIVITY_COUNT;
+      } 
+      else total += Z80Interrupt (&state, siob.registers[2] | 8 );
+    }
 
-      if(ax25_InQ_HasData() && !RxCharIn_Idx && !ax25rdy && !txundr_count  && !Ax25_In_Dly ) /* do we have a socket */
-      {
-        RxCharIn_Idx = 1; /* Let everyone know */
-        Ax25_In_Dly = 75; /* this is an arbitrary delay amount so emulator can process rx packets */
-      }
+    if(ax25_InQ_HasData() && !RxCharIn_Idx && !ax25rdy && !txundr_count  && !Ax25_In_Dly ) /* do we have a socket */
+    {
+      RxCharIn_Idx = 1; /* Let everyone know */
+      Ax25_In_Dly = 75; /* this is an arbitrary delay amount so emulator can process rx packets */
+    }
 
-      if(Ax25_In_Dly && !RxCharIn_Idx && !txundr_count) Ax25_In_Dly--;
-    } /* end if sio int */
+    if(Ax25_In_Dly && !RxCharIn_Idx && !txundr_count) Ax25_In_Dly--;
 
     if(oldptt != (sioa.registers[5] & 2))
     {
