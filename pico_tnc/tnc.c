@@ -44,7 +44,8 @@ tnc_t tnc[PORT_N];
 
 double  cycles;
 double  total;
-double  timer_int,sio_int;
+
+int  timer_int;
 
 /* tnc emulator */
 unsigned char flop,oldptt;
@@ -227,19 +228,19 @@ void tnc_init(void)
     /* Reset emulated SIO state machines */
     SIO_Reset(&sioa); /* Reset Emulated Serial i/o a */
     SIO_Reset(&siob); /* Reset Emulated Serial i/o b */
-	  sio_int = 0;
 
     /* Reset z80 emulator */
     Z80Reset(&state);
 
     /* Init z80 cycle time counters */
-    total = timer_int = sio_int =  0.0;
+    total = timer_int = 0;
 }
 
 /* Run some cycles of emulated tnc */
 void tnc_emulate(void)
 {
     bool flashUpdate = false;
+    unsigned int x;
     tnc_t *tp = &tnc[0];
 
     uint32_t ts = time_us_32();
@@ -252,23 +253,24 @@ void tnc_emulate(void)
 #endif
     cycles = Z80Emulate(&state, CYCLES_PER_PASS);
     total += cycles;
-    timer_int += cycles;
-    sio_int += cycles;
 
-/* Every so many cycles do a timer interrupt, highly inacurate but it
-doesn't matter since we don't rely on it anymore. This could be done
-better but for now it works */
-  if( timer_int > 275000 )
-  // if (time_us_32() - ts >= TIMER_TIME_10MS)
+  /* Every other run do a timer interrupt, we come into the emulator
+  roughly ever 10ms not super acurate but it */
+  if( timer_int == 0)
   {
-  //   ts += TIMER_TIME_10MS;
-    timer_int = 0;
+    timer_int = 3;
     total += Z80Interrupt (&state, 0x10 );
-  // }
+    cycles = Z80Emulate(&state, CYCLES_PER_INT);
+    total += cycles;
+  }
+  else
+  {
+    timer_int--;
+  }
 
   // /* Every second update our clock from pico rtc */
-  // if (time_us_32() - cs >= TIME_1SECOND)
-  // {
+  if (tnc_time() - cs >= TIME_1SECOND)
+  {
     cs += TIME_1SECOND;
 
     datetime_t current_time;
@@ -276,7 +278,7 @@ better but for now it works */
 
     // Hear check if our Clock's year matches PICO RTC and if not
     // Update RTC from tncemu's clock.
-    unsigned int x= current_time.year;
+    x= current_time.year;
     x = x - ((x / 100) * 100);
     if( Ram[clock_address+5] != tobcd(x) )
     {
@@ -356,14 +358,9 @@ better but for now it works */
 
 /* These values may need to be adjusted depending on the speed of 
 the machine you will be emulating on. */
-#ifdef SPEED_PI
-    if( sio_int > 115004 ) /* on pi3 */
-#else
     if( 1 ) /* on fast x86 */
-#endif
     {
       flop = flop ^0x01;
-      sio_int = 0;
       if(flop)
       {
 
@@ -374,7 +371,6 @@ the machine you will be emulating on. */
             while(!state.iff1) cycles = Z80Emulate(&state, CYCLES_PER_INT );
             cycles += Z80Interrupt (&state, siob.registers[2] | 0x0c);   // ax25 char read int
             total += cycles;
-            sio_int += cycles;
           }
 
           if(ax25rdy)
@@ -382,7 +378,6 @@ the machine you will be emulating on. */
             while(!state.iff1) cycles = Z80Emulate(&state, CYCLES_PER_INT );
             cycles += Z80Interrupt (&state, siob.registers[2] | 0x0e); // eof int
             total += cycles;
-            sio_int += cycles;
           }
         }
         else
@@ -406,7 +401,6 @@ the machine you will be emulating on. */
             while(!state.iff1) cycles = Z80Emulate(&state, CYCLES_PER_INT );
             cycles += Z80Interrupt (&state, siob.registers[2] | 0x0a); // ext stat int
             total += cycles;
-            sio_int += cycles;
           }
           else
           {
@@ -415,7 +409,6 @@ the machine you will be emulating on. */
           // while(!state.iff1) total += Z80Emulate(&state, CYCES_PER_INT );
               cycles = Z80Interrupt (&state, siob.registers[2] );
               total += cycles;
-              sio_int += cycles;
             }
           }
         }
