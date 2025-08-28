@@ -150,7 +150,7 @@ typedef struct TNC {
 #define STA_LED_GPIO 15 /* IO for Station LED */
 #define TNC_EMULATING_LED_PIN PICO_DEFAULT_LED_PIN
 
-#define DEFAULT_ACTIVITY_COUNT 500
+#define DEFAULT_ACTIVITY_COUNT 1000
 
     uint8_t ax25_parms[NUMKISSPARMS];
 
