@@ -166,7 +166,7 @@ int main()
                 kiss_input(&tty[0], ch);
             }
 
-            if (time_us_32() - flash_time >= TIME_1SECOND) {
+            if (tnc_time() - flash_time >= TIME_1SECOND) {
                 flash_time += TIME_1SECOND;
                 kiss_flash_state = ! kiss_flash_state;
                 gpio_put(tnc[0].staled_pin, kiss_flash_state);
