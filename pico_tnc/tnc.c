@@ -67,6 +67,8 @@ unsigned int PrevbbsMsgNo;
 unsigned int clock_address = 0; /* Clock stucture in TNC Ram */
 unsigned int bbsmsg_address = 0;
 
+uint32_t parm_check_time = 0;
+
 /* Locations in ram where z80 code stores these parameters */
 unsigned int ax25_parm_location[NUMKISSPARMS-1]= {0x3FDB, 0x4033, 0x4035, 0x3FD7};
 
@@ -235,6 +237,8 @@ void tnc_init(void)
 
     /* Init z80 cycle time counters */
     total = timer_int = 0;
+
+    parm_check_time = tnc_time();
 }
 
 /* Run some cycles of emulated tnc */
@@ -243,10 +247,6 @@ void tnc_emulate(void)
     bool flashUpdate = false;
     unsigned int x;
     tnc_t *tp = &tnc[0];
-
-    uint32_t ts = time_us_32();
-    uint32_t cs = time_us_32();
-
 
     #ifdef TNCEMUDEBUG
     printf("PC=%x cycles=%.0f\n",state.pc,total);
@@ -269,11 +269,10 @@ void tnc_emulate(void)
     timer_int--;
   }
 
-  // /* Every second update our clock from pico rtc */
-  if (tnc_time() - cs >= TIME_1SECOND)
+  /* Every second update our clock from pico rtc */
+  if (tnc_time() - parm_check_time >= TIME_1SECOND)
   {
-    cs += TIME_1SECOND;
-
+    parm_check_time = tnc_time();
     datetime_t current_time;
     rtc_get_datetime(&current_time);
 
@@ -321,7 +320,8 @@ void tnc_emulate(void)
         flashUpdate = true;
     }
 
-    /* compare saved kiss parms to ram parms and if chaned update sender parms  */
+    /* compare saved kiss parms to ram parms and if KISS_TXDELAY changed update flash 
+        after updating ax25_parms to match emulator */
     for(x=0; x< NUMKISSPARMS-1; x++)
     {
       if(tp->ax25_parms[x] != Ram[ax25_parm_location[x]] )

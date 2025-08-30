@@ -72,17 +72,8 @@ int main()
     // create usb output queue
     usb_output_init();
 
-    // initialize tnc
-    tnc_init();
-    send_init();
-    receive_init();
-    serial_init();
-    tty_init();     // should call after tnc_init()
-    //bell202_init();
-
     tty[0].kiss_mode = 0; // default kiss off
     tty[1].kiss_mode = 0;
-
 
     // Read it and if 0 set kiss mode.
     if( gpio_get(KISS_SELECT_GPIO) == false) {
@@ -99,7 +90,18 @@ int main()
         if (watchdog_caused_reboot()) {
             printf("Watch Dog Timer Failure\n");
         }
+    }
 
+    // initialize tnc
+    tnc_init();
+    send_init();
+    receive_init();
+    serial_init();
+    tty_init();     // should call after tnc_init()
+    //bell202_init();
+
+    // If not in kiss mode print greeting
+    if( !tty[0].kiss_mode|| !tty[1].kiss_mode) {
         // output greeting text to both tty's (serial/usb)
         tty_write_str(&tty[0], greeting);
         tty_write_str(&tty[1], greeting);
