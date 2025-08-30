@@ -58,7 +58,7 @@ static const uint8_t greeting[] =
 int main()
 {
     bool kiss_flash_state = false;
-    uint32_t flash_time = time_us_32();
+    uint32_t flash_time = tnc_time();
 
     stdio_init_all();
 
@@ -167,7 +167,7 @@ int main()
             }
 
             if (tnc_time() - flash_time >= TIME_1SECOND) {
-                flash_time += TIME_1SECOND;
+                flash_time = tnc_time();
                 kiss_flash_state = ! kiss_flash_state;
                 gpio_put(tnc[0].staled_pin, kiss_flash_state);
                 gpio_put(tnc[0].conled_pin, !kiss_flash_state);
