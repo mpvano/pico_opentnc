@@ -68,7 +68,7 @@ letterDepth = .5; // Depth of letter cuts
 
 // audio jacks
 audiojack1_offset = 15.7;
-audiojack2_offset = 28.7;
+audiojack2_offset = 29;
 
 //Mounting holes
 woodscrewHeadRad = 4.6228;  //Number 8 wood screw head radius
@@ -226,21 +226,21 @@ module led_holes(count=4) {
     }
 }
 
-module audio_jack_hole(jack_diameter=6.2, clearance=0.3, thickness=th+2) {
+module audio_jack_hole(jack_diameter=6.2, clearance=0.6, thickness=th+2) {
     rotate([270, 0, 90])
     cylinder(h=thickness, d=jack_diameter + clearance, $fn=64);
 }
 
 module audio_jacks()
 {
-        translate([-int_w/2+1, int_l/2 - audiojack1_offset, int_h/2-pcb_thickness])
-        audio_jack_hole();
+        translate([-int_w/2+1, int_l/2 - audiojack1_offset, int_h/2-pcb_thickness+.5])
+        audio_jack_hole(6.5,.6);
         translate([-int_w/2-th+letterDepth, int_l/2 - audiojack1_offset + 3.5, int_h/2+4])
         rotate([90, 0, 270])  // orient text to face front
             linear_extrude(height=2.0)
                 text("TTL", size=3, font="Liberation Sans:style=Bold");
         translate([-int_w/2+1, int_l/2 - audiojack2_offset, int_h/2 + .5 -pcb_thickness])
-        audio_jack_hole();
+        audio_jack_hole(6.2,.3);
         translate([-int_w/2-th+letterDepth, int_l/2 - audiojack2_offset + 3.5, int_h/2+4])
         rotate([90, 0, 270])  // orient text to face front
             linear_extrude(height=2.0)
@@ -253,7 +253,7 @@ module sidecutouts()
     translate([1, int_l/2-th, int_h/2-.6-pcb_thickness+picosocketh])
         rotate([0, 0, 0])  // orient to face front
 
-    cube([10, 10, 3.5], center=true);     // cutout rectangle
+    cube([11, 10, 4], center=true);     // cutout rectangle
 
     if(dipswitchhole > 0) {
     translate([.4, -int_l/2-th, int_h/2+2-pcb_thickness+2])
@@ -264,7 +264,7 @@ module sidecutouts()
     
     translate([-15.5, int_l/2-1, int_h/2-pcb_thickness+2])
         rotate([270, 0, 0])
-        cylinder(h=th*2, r=2.0);
+        cylinder(h=th*2, r=2.7);
     
 }
 
