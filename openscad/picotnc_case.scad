@@ -3,7 +3,7 @@
 
 wi=60;	// inner width, length & heigth
 li=73;
-h=22;
+h=25;
 th=2;	// wall thickness
 r=3;	// radius of rounded corners
 opening_help=false;	// make a gap to ease opening of the cover, f.ex.
@@ -20,7 +20,8 @@ measure_from="int"; // ["int", "ext"]
 
 // Display PCB render inside box?
 showpcb = 1;
-pcbfilename = "pcb+socket.stl";
+pcbfn = "pcb3d.stl";
+pcbsockfn = "pcb+socket.stl";
 
 // Is dip switch side mounted if so cut hole for it
 dipswitchhole = 1;
@@ -28,7 +29,6 @@ dipswitchhole = 1;
 // If pico is mounted in socket this is the pico height
 // off the pcb needed for connector heights!
 picosocketh = 8.0;
-
 
 // --- PCB dimensions (from KiCad measurement) ---
 pcb_width   = 53.5;   // mm  (X)
@@ -58,7 +58,7 @@ pcb_offset=[5.001, 5.001];
 pcb_offset_from="corner"; // ["corner", "center"]
 // --- PCB model import (optional STL) ---
 
-led_offset = 57.50;
+led_offset = 57.75;
 led_spacing = 6.4;
 led_diameter = 3.0; // 3mm led'scale
 led_clearance = .2;
@@ -93,7 +93,12 @@ ext_h= int_h + th+3 + th;
 
 module pcb_model() {
     if(showpcb) {
-        import(pcbfilename);
+        if(picosocketh == 0.0) {
+            import(pcbfn);
+        }
+        else {
+            import(pcbsockfn);
+        }
     }
 }
 
@@ -214,11 +219,11 @@ module at_corners(s=[int_w,int_l]) {
 module led_holes(count=4) {
     $fn=64; // Smooth cylinder walls
     for (i = [0 : count-1]) {
-        translate([-int_w/2+1, int_l/2 - led_offset + i*led_spacing, int_h/2 -pcb_thickness])
+        translate([-int_w/2+1, int_l/2 - led_offset + i*led_spacing, pcb_foot_h+pcb_thickness+th+.5])
             rotate([270, 0, 90])
                 cylinder(h=th+2, r=(led_diameter + led_clearance)/2);
 
-        translate([-int_w/2-th+letterDepth, int_l/2 - led_offset + i*led_spacing + led_diameter/2, int_h -1])
+        translate([-int_w/2-th+letterDepth, int_l/2 - led_offset + i*led_spacing + led_diameter/2, pcb_foot_h+pcb_thickness+th+13])
         rotate([0, 90, 180])  // orient text to face front
             linear_extrude(height=2.0)
                 text(led_labels[i], size=3, font="Liberation Sans:style=Bold");
@@ -233,15 +238,15 @@ module audio_jack_hole(jack_diameter=6.2, clearance=0.6, thickness=th+2) {
 
 module audio_jacks()
 {
-        translate([-int_w/2+1, int_l/2 - audiojack1_offset, int_h/2-pcb_thickness+.5])
+        translate([-int_w/2+1, int_l/2 - audiojack1_offset, pcb_foot_h+pcb_thickness+th+2])
         audio_jack_hole(6.5,.6);
-        translate([-int_w/2-th+letterDepth, int_l/2 - audiojack1_offset + 3.5, int_h/2+4])
+        translate([-int_w/2-th+letterDepth, int_l/2 - audiojack1_offset + 3.5, pcb_foot_h+pcb_thickness+th+8])
         rotate([90, 0, 270])  // orient text to face front
             linear_extrude(height=2.0)
                 text("TTL", size=3, font="Liberation Sans:style=Bold");
-        translate([-int_w/2+1, int_l/2 - audiojack2_offset, int_h/2 + .5 -pcb_thickness])
+        translate([-int_w/2+1, int_l/2 - audiojack2_offset, pcb_foot_h+pcb_thickness+th+1.5])
         audio_jack_hole(6.2,.3);
-        translate([-int_w/2-th+letterDepth, int_l/2 - audiojack2_offset + 3.5, int_h/2+4])
+        translate([-int_w/2-th+letterDepth, int_l/2 - audiojack2_offset + 3.5, pcb_foot_h+pcb_thickness+th+8])
         rotate([90, 0, 270])  // orient text to face front
             linear_extrude(height=2.0)
                 text("RIG", size=3, font="Liberation Sans:style=Bold");
@@ -250,19 +255,19 @@ module audio_jacks()
 module sidecutouts()
 {
     $fn=64; // Smooth cylinder walls
-    translate([1, int_l/2-th, int_h/2-.6-pcb_thickness+picosocketh])
+    translate([1, int_l/2-th, pcb_foot_h+pcb_thickness+picosocketh+th+.4])
         rotate([0, 0, 0])  // orient to face front
 
     cube([11, 10, 4], center=true);     // cutout rectangle
 
     if(dipswitchhole > 0) {
-    translate([.4, -int_l/2-th, int_h/2+2-pcb_thickness+2])
+    translate([-.1, -int_l/2-th, pcb_foot_h+pcb_thickness+th+3.5])
         rotate([0, 0, 0])  // orient text to face front
 
-    cube([11, 10, 5], center=true);     // cutout rectangle
+    cube([12, 10, 9], center=true);     // cutout rectangle
     }
     
-    translate([-15.5, int_l/2-1, int_h/2-pcb_thickness+2])
+    translate([-15.5, int_l/2-1, pcb_foot_h+pcb_thickness+th+3.5])
         rotate([270, 0, 0])
         cylinder(h=th*2, r=2.7);
     
