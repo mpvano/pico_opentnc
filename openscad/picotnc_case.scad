@@ -21,14 +21,14 @@ measure_from="int"; // ["int", "ext"]
 // Display PCB render inside box?
 showpcb = 1;
 pcbfn = "pcb3d.stl";
-pcbsockfn = "pcb+socket.stl";
+pcbsockfn = "pcb3d_socknheader.stl";
 
 // Is dip switch side mounted if so cut hole for it
 dipswitchhole = 1;
 
 // If pico is mounted in socket this is the pico height
 // off the pcb needed for connector heights!
-picosocketh = 8.0;
+picosocketh = 11.3;
 
 // --- PCB dimensions (from KiCad measurement) ---
 pcb_width   = 53.5;   // mm  (X)
@@ -68,7 +68,7 @@ letterDepth = .7; // Depth of letter cuts
 
 // audio jacks
 audiojack1_offset = 15.7;
-audiojack2_offset = 29;
+audiojack2_offset = 29.2;
 
 //Mounting holes
 woodscrewHeadRad = 4.6228;  //Number 8 wood screw head radius
@@ -239,13 +239,13 @@ module audio_jack_hole(jack_diameter=6.2, clearance=0.6, thickness=th+2) {
 module audio_jacks()
 {
         translate([-int_w/2+1, int_l/2 - audiojack1_offset, pcb_foot_h+pcb_thickness+th+2])
-        audio_jack_hole(6.5,.6);
+        audio_jack_hole(6.5,.7);
         translate([-int_w/2-th+letterDepth, int_l/2 - audiojack1_offset + 3.5, pcb_foot_h+pcb_thickness+th+8])
         rotate([90, 0, 270])  // orient text to face front
             linear_extrude(height=2.0)
                 text("TTL", size=3, font="Liberation Sans:style=Bold");
-        translate([-int_w/2+1, int_l/2 - audiojack2_offset, pcb_foot_h+pcb_thickness+th+1.5])
-        audio_jack_hole(6.2,.3);
+        translate([-int_w/2+1, int_l/2 - audiojack2_offset, pcb_foot_h+pcb_thickness+th+1.3])
+        audio_jack_hole(6.2,.4);
         translate([-int_w/2-th+letterDepth, int_l/2 - audiojack2_offset + 3.5, pcb_foot_h+pcb_thickness+th+8])
         rotate([90, 0, 270])  // orient text to face front
             linear_extrude(height=2.0)
