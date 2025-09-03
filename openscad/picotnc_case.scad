@@ -3,7 +3,7 @@
 
 wi=60;	// inner width, length & heigth
 li=73;
-h=25;
+h=28;
 th=2;	// wall thickness
 r=3;	// radius of rounded corners
 opening_help=false;	// make a gap to ease opening of the cover, f.ex.
@@ -64,7 +64,7 @@ led_diameter = 3.0; // 3mm led'scale
 led_clearance = .2;
 led_labels = ["STA", "CON", "DCD", "PTT"];
 
-letterDepth = .5; // Depth of letter cuts
+letterDepth = .7; // Depth of letter cuts
 
 // audio jacks
 audiojack1_offset = 15.7;
