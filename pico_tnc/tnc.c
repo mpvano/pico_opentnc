@@ -68,6 +68,9 @@ unsigned int clock_address = 0; /* Clock stucture in TNC Ram */
 unsigned int bbsmsg_address = 0;
 
 uint32_t parm_check_time = 0;
+bool newMsg = false;
+bool newMsgFlashState = false;
+
 
 /* Locations in ram where z80 code stores these parameters */
 unsigned int ax25_parm_location[NUMKISSPARMS-1]= {0x3FDB, 0x4033, 0x4035, 0x3FD7};
@@ -317,6 +320,7 @@ void tnc_emulate(void)
     if( PrevbbsMsgNo != GetNextBbsMsgNo())
     {
         PrevbbsMsgNo = GetNextBbsMsgNo();
+	newMsg = true;
         flashUpdate = true;
     }
 
@@ -354,7 +358,17 @@ void tnc_emulate(void)
 
     /* Here check SIO dtr values and set gpio's for leds according to status */
     gpio_put(tp->staled_pin, !(sioa.registers[5] & 0x80));
-    gpio_put(tp->conled_pin, !(siob.registers[5] & 0x80));
+
+
+    if((sioa.registers[5] & 0x80) == 0x80 && newMsg == true ) 
+    {
+      gpio_put(tp->staled_pin, newMsgFlashState);
+      newMsgFlashState = !newMsgFlashState;
+    }
+    else
+    {
+      gpio_put(tp->staled_pin, !(sioa.registers[5] & 0x80));
+    }
   }
 
     flop = flop ^0x01;
@@ -570,6 +584,9 @@ int IO_in (int port)
       /* some key translations are they needed? */
       if(x == 0x0a) x=0x0d;
       if(x == 0x7f) x=0x08;
+      /* if a return char from console clear new bbs msgs */
+      if(x == 0x0d) newMsg = false;
+
 #ifdef TNCEMUDEBUG
       if(x == '&') RxCharIn_Idx=1; // Trigger to inject test ax25 packet
 #endif
