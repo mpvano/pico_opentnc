@@ -319,9 +319,13 @@ void tnc_emulate(void)
     /* Check if any new bbs msgs have arrived and if so save ram to disk */
     if( PrevbbsMsgNo != GetNextBbsMsgNo())
     {
-        PrevbbsMsgNo = GetNextBbsMsgNo();
-	newMsg = true;
-        flashUpdate = true;
+      /* Check if next bbs msg no is > than previous otherwise no new msg */
+      if(GetNextBbsMsgNo() > PrevbbsMsgNo)
+      {
+        newMsg = true;
+      }
+      flashUpdate = true;
+      PrevbbsMsgNo = GetNextBbsMsgNo();
     }
 
     /* compare saved kiss parms to ram parms and if KISS_TXDELAY changed update flash 
