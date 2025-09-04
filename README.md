@@ -7,7 +7,7 @@ PICO TNC is the Terminal Node Controler for Amateur Packet Radio powered by Rasp
 ## PIC TNC features
 
 - Encode and decode Bell 202 AFSK signal without modem chip
-- Support both USB serial and UART serial interface
+- Support USB Serial as well as 3.3v ttl serial interface
 - Emulated Support of full tnc and tnc commands including pbbs
 - Kiss support at the flip of a switch.
 
@@ -15,6 +15,7 @@ PICO TNC is the Terminal Node Controler for Amateur Packet Radio powered by Rasp
 - Monitor Emulated TNC SIO uart registers for baud rate changes and update PICO serial port baud accordingly.
 - Add 1600 1800 hz modem for HF Modem support.
 - Investigate if FX.25 can be added especially for hf.
+- Investigate possibility of having USB port as serial terminal port at the same time as having kiss port on ttl serial port and vice versa
   
 ## How to build
 ```
