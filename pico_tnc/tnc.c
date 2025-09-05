@@ -361,8 +361,7 @@ void tnc_emulate(void)
     }
 
     /* Here check SIO dtr values and set gpio's for leds according to status */
-    gpio_put(tp->staled_pin, !(sioa.registers[5] & 0x80));
-
+    gpio_put(tp->conled_pin, !(siob.registers[5] & 0x80));
 
     if((sioa.registers[5] & 0x80) == 0x80 && newMsg == true ) 
     {
