@@ -278,7 +278,7 @@ void tnc_emulate(void)
     parm_check_time = tnc_time();
     datetime_t current_time;
     rtc_get_datetime(&current_time);
-
+   // printf("Pllq=%d,%d\n",tp->pll_quality,tp->flag_count);
     // Hear check if our Clock's year matches PICO RTC and if not
     // Update RTC from tncemu's clock.
     x= current_time.year;

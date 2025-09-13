@@ -102,12 +102,14 @@ typedef struct TNC {
     uint8_t flag;
     uint8_t data_byte;
     uint8_t data_bit_cnt;
+//    uint8_t flag_count;
 
     // decode
     uint8_t edge;
     
     // decode2
     int32_t pll_counter;
+    int32_t pll_quality; // PLL lock confidence
     uint8_t pval;
     uint8_t nrzi;
 
