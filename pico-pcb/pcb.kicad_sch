@@ -3593,7 +3593,7 @@
 		)
 		(uuid "be899e11-562e-4719-adb3-d3d52265ca04")
 	)
-	(text "R6\nYaesu 4.7K\nStandard 22k\nIcom 22k"
+	(text "R9\nYaesu 4.7K\nStandard 22k\nIcom 22k"
 		(exclude_from_sim no)
 		(at 188.214 139.446 0)
 		(effects
@@ -4459,7 +4459,7 @@
 			)
 		)
 	)
-	(global_label "PSAVE"
+	(global_label "OPT2"
 		(shape input)
 		(at 41.91 107.95 0)
 		(fields_autoplaced yes)
@@ -4471,7 +4471,7 @@
 		)
 		(uuid "52708da3-c20d-491b-856c-dee13eac8d62")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 50.7009 107.95 0)
+			(at 49.6728 107.95 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -4551,7 +4551,7 @@
 	)
 	(global_label "MIC"
 		(shape input)
-		(at 210.82 58.42 180)
+		(at 210.82 55.88 180)
 		(fields_autoplaced yes)
 		(effects
 			(font
@@ -4561,7 +4561,7 @@
 		)
 		(uuid "76fe68ca-6136-441a-97df-d5ec0733d129")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 204.5086 58.42 0)
+			(at 204.5086 55.88 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -4727,7 +4727,7 @@
 	)
 	(global_label "SP"
 		(shape input)
-		(at 210.82 55.88 180)
+		(at 210.82 58.42 180)
 		(fields_autoplaced yes)
 		(effects
 			(font
@@ -4737,7 +4737,7 @@
 		)
 		(uuid "c526828b-599c-4e39-b0b6-f5ce4b4d3a4a")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 205.3553 55.88 0)
+			(at 205.3553 58.42 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -4813,7 +4813,7 @@
 			)
 		)
 	)
-	(global_label "PSAVE"
+	(global_label "OPT2"
 		(shape input)
 		(at 102.87 124.46 0)
 		(fields_autoplaced yes)
@@ -4825,7 +4825,7 @@
 		)
 		(uuid "dba3c7b2-4822-48b8-97d2-25f3375b9e1e")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 111.6609 124.46 0)
+			(at 110.6328 124.46 0)
 			(effects
 				(font
 					(size 1.27 1.27)
