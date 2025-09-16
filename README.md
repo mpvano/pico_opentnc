@@ -10,6 +10,7 @@ PICO TNC is the Terminal Node Controler for Amateur Packet Radio powered by Rasp
 - Support USB Serial as well as 3.3v ttl serial interface
 - Emulated Support of full tnc and tnc commands including pbbs
 - Kiss support at the flip of a switch.
+- Operates with open squelch
 
 ## Todo
 - Monitor Emulated TNC SIO uart registers for baud rate changes and update PICO serial port baud accordingly.
