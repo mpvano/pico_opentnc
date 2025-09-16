@@ -232,6 +232,8 @@ static void decode2(tnc_t *tp, int val)
         decode_bit(tp, val == tp->nrzi);    // decode NRZI
         tp->nrzi = val;
 
+#ifdef OPEN_SQUELCH
+
         if(tp->pll_quality > 0)
         {
             tp->pll_quality--;
@@ -250,24 +252,22 @@ static void decode2(tnc_t *tp, int val)
                 tp->cdt = true;
             }
         }      
+#endif
     }
 
     if (val != tp->pval) {
         int32_t adjust = tp->pll_counter >> 2; // phase correction amount
         tp->pll_counter -= adjust; // adjust PLL counter
 
+#ifdef OPEN_SQUELCH
         // update lock confidence
-        if (adjust < (1 << 28)) {   // "small" correction (tune threshold!)
-//            if(tp->pll_quality > 0) tp->pll_quality--;
-        }
-        else 
+        if (adjust >= (1 << 28)) // lock error so penalze quality
         {
             if(tp->pll_quality < 100) tp->pll_quality+=5; // penalize lock error
         }
-
+#endif
         tp->pval = val;
     }
-
 }
 
 void demodulator(tnc_t *tp, int adc)
@@ -303,24 +303,33 @@ void demodulator(tnc_t *tp, int adc)
 #define CDT_THR_LOW 1024
 #define CDT_THR_HIGH (CDT_THR_LOW * 2) // low +6dB
 
-    // if (!tp->cdt && tp->cdt_lvl > CDT_THR_HIGH) { // CDT on
+#ifdef OPEN_SQUELCH
+    // If no signal energy revert receiver state to FLAG and cdt=false
+    if (tp->cdt && tp->cdt_lvl < CDT_THR_LOW)
+    {
+        tp->state = FLAG;
+        tp->cdt = false;
+        gpio_put(tp->cdt_pin, 0);
+    }
+#else
+    if (!tp->cdt && tp->cdt_lvl > CDT_THR_HIGH) { // CDT on
 
-    //     gpio_put(tp->cdt_pin, 1);
-    //     tp->cdt = true;
+        gpio_put(tp->cdt_pin, 1);
+        tp->cdt = true;
     //     //printf("(%u) decode: CDT on, adc: %d, cdt_lvl: %d, avg: %d, port = %d\n", tnc_time(), adc, tp->cdt_lvl, tp->avg, tp->port);
     //     //printf("(%u) decode: cdt on, port = %d\n", tnc_time(), tp->port);
 
-    // } else if (tp->cdt && tp->cdt_lvl < CDT_THR_LOW) { // CDT off
+    } else if (tp->cdt && tp->cdt_lvl < CDT_THR_LOW) { // CDT off
 
-    //     gpio_put(tp->cdt_pin, 0);
-    //     tp->cdt = false;
+        gpio_put(tp->cdt_pin, 0);
+        tp->cdt = false;
     //     //printf("(%u) decode: CDT off, adc: %d, cdt_lvl: %d, avg: %d, port = %d\n", tnc_time(), adc, tp->cdt_lvl, tp->avg, tp->port);
     //     //printf("(%u) decode: cdt off, port = %d\n", tnc_time(), tp->port);
 
-    // }
+    }
 
-    // if (!tp->cdt) return;
-    // if (tp->send_state != SP_IDLE && tp->send_state != SP_WAIT_CLR_CH) return;
+    if (!tp->cdt) return;
+#endif
 
 #if 0
 	sum += adc;

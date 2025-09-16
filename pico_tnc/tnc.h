@@ -36,6 +36,7 @@
 
 //#define BELL202_SYNC 1  // sync decode
 #define DECODE_PLL 1    // use PLL
+#define OPEN_SQUELCH    // if using open squelch requires pll
 
 #define CONTROL_N 10
 #define DAC_QUEUE_LEN 64
@@ -102,7 +103,6 @@ typedef struct TNC {
     uint8_t flag;
     uint8_t data_byte;
     uint8_t data_bit_cnt;
-//    uint8_t flag_count;
 
     // decode
     uint8_t edge;
