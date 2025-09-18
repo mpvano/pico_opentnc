@@ -39,24 +39,6 @@ Set this command to ON if you use RXBLOCK.
 
 
 ------------------------------------------------------------
-Command   :    3RDPARTY ON/OFF
-Mnemonic  :    3RD
-Default   :    ON
-
-Parameter :    ON   Allow any station to access your BBS.
-
-               OFF  Allow to access the BBS only station
-                    specified by MYMCALL.
-
-Refer to  :    MBOD, MYMCALL
-------------------------------------------------------------
-This  command  sets whether any station can be allowed to use
-your message board as an open BBS.If 3RDPARTY is OFF, your
-message board is effective for only personal use.
-
-
-
-------------------------------------------------------------
 Command   :    AX25L2V2 ON/OFF
 Mnemonic  :    A
 Default   :    ON
@@ -280,49 +262,6 @@ NOTE: Proper choice of 'n' avoids cluttering a busy  channel
 with lots of unnecessary transmissions.
 
 
-
-------------------------------------------------------------
-Command   :    BBSMSGS ON/OFF
-Mnemonic  :    BBS
-Default   :    OFF
-
-Parameter :    ON   Modify display message format to
-                    terminal.
-
-               OFF  Standard display message format.
-
-Refer to  :    CONK, MONITOR, MBOD, NEWMODE, NOMODE, USERS
-------------------------------------------------------------
-When BBSMSGS is set to ON,  the TNC will output the terminal
-with modified message format. The <LF> character is added to
-in front of the display message.
-
-
-<LF> *** CONNECTED
-<LF> *** DISCONNECTED
-<LF> *** retry limit exceeded
-<LF> *** xxx Busy
-<LF> *** FRAME sent
-<LF> *** FRAME rcvd
-
-In the above example,  the display message will include  the
-<LF>.
-
-When  this  command is active,  "*** Connect request: xxxx "
-will not be displayed.
-
-If BBSMSGS ON and CONOK OFF,  the TNC will  respond  to  all
-connect request that you are busy, but the terminal will not
-output  the  "***  Connect  request:  xxx  " message.   This
-feature can be used while you  are  receiving  an  important
-data from the other station,  and you do not want to disturb
-by the connect request message.
-
-CONOK OFF will reject all connection request.   Set CONOK ON
-if you use BBS feature.
-
-
-
 ------------------------------------------------------------
 Command   :    BKONDEL ON/OFF
 Mnemonic  :    BK
@@ -413,7 +352,6 @@ the information.
 community  has  learned  who  and where you are,  follow the
 practice used by more experienced packeteers.    SET  BEACON
 EVERY 0 !!!
-
 
 
 ------------------------------------------------------------
@@ -550,8 +488,6 @@ character cancels only the last line of a multiline packet.
 
 Like all other input editing features,  line cancellation is
 disable in the Transparent Mode.
-
-
 
 
 ------------------------------------------------------------
@@ -692,6 +628,24 @@ The 'check' packet frame contains  no  information,  but  is
 interpreted by the other station's TNC to see if it is still
 connected. If the other station's TNC is still connected, it
 sends an appropriate response packet.
+
+------------------------------------------------------------
+Command   :    CLKADJ n
+Mnemonic  :    n
+Default   :    0
+
+Parameter :    n    0 to 65535 specifies a correction factor
+                    that is applied to real time clock
+
+Refer to  :    DAYTIME
+------------------------------------------------------------
+CLKADJ provides you with a limited ability to correct the TNC
+real time clock. A value of 0 (zero) causes no corretion to be
+applied. If the value is anything else the corection factor is
+calculated as: relative clock speed in % = 100-(9.16667 x 1/n)
+
+This is no longer used as the emulator uses the pico's internal
+real time clock which is more accurate.
 
 ------------------------------------------------------------
 Command   :    CMDTIME n
@@ -1348,27 +1302,6 @@ Example:
 cmd: DAYTIME 9210030935
 cmd: DAYTIME
 92/10/03 09:35:10
-
-
-
-------------------------------------------------------------
-Command   :    DAYSTAMP ON/OFF
-Mnemonic  :    DAYS
-Default   :    OFF
-
-Parameter :    ON   The DATE is included in CONSTAMP and
-                    MSTAMP.
-
-               OFF  Only the TIME is included in CONSTAMP
-                    and MSTAMP.
-
-Refer to  :    TIME, DAYUSA, DAYTIME
-------------------------------------------------------------
-DAYSTAMP activates the date in CONSTAMP and MSTAMP.
-
-Set  DAYTSAMP  to  ON when you want a dated record or packet
-channel activity.
-
 
 
 ------------------------------------------------------------
@@ -2228,7 +2161,7 @@ contain user information).
 
 
 ------------------------------------------------------------
-Command   :    MFILETER n1[, n2[,n3[,n4]]]
+Command   :    MFILTER n1[, n2[,n3[,n4]]]
 Mnemonic  :    MFI
 Default   :    $00
 
@@ -3067,33 +3000,6 @@ TNC OFF, then ON again.
 
 RESTART  does  not reset the parameter values in bbRAM.  See
 the RESET command.
-
-
-------------------------------------------------------------
-Command   :    RSFLOW ON/OFF
-Mnemonic  :    RS
-Default   :    ON
-
-Parameter :    ON   Enables hardware flow control.
-
-               OFF  Disable the hardware flow control when
-                    the XFLOW is set to ON.
-
-Refer to  :    XFLOW, FLOVER
-------------------------------------------------------------
-RSFLOW is select the method of flow control between your TNC
-and terminal.
-
-When RSFLOW is set to ON, the flow control is performed same
-as the TAPR TNC-2. (If XFLOW is set to ON, both software and
-hardware flow control is performed.)
-
-When  RSFLOW  is  set  to  OFF,  software  flow  control  is
-performed only when the XFLOW is set to ON.  If XFLOW is set
-to  OFF,   only  hardware  flow  control  (DTR  or  RTS)  is
-performed.
-
-
 
 
 ------------------------------------------------------------
