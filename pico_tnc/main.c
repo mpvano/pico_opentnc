@@ -30,6 +30,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdlib.h>
 #include <math.h>
 #include "pico/stdlib.h"
+#include "pico/bootrom.h"
 #include "hardware/dma.h"
 #include "hardware/pwm.h"
 #include "hardware/irq.h"
@@ -62,12 +63,32 @@ int main()
 
     stdio_init_all();
 
-     // Initialize the kiss mode slect switch pin
+    // Initialize the kiss mode slect switch pin
     gpio_init(KISS_SELECT_GPIO);
     // Set the pin as input
     gpio_set_dir(KISS_SELECT_GPIO, GPIO_IN);
     // Enable the internal pull-up resistor
     gpio_pull_up(KISS_SELECT_GPIO);
+
+    // Initialize the kiss mode slect switch pin
+    gpio_init(PSAVE_SELECT_GPIO);
+    // Set the pin as input
+    gpio_set_dir(PSAVE_SELECT_GPIO, GPIO_IN);
+    // Enable the internal pull-up resistor
+    gpio_pull_up(PSAVE_SELECT_GPIO);
+
+    // Initialize the kiss mode slect switch pin
+    gpio_init(OPTION_SELECT_GPIO);
+    // Set the pin as input
+    gpio_set_dir(OPTION_SELECT_GPIO, GPIO_IN);
+    // Enable the internal pull-up resistor
+    gpio_pull_up(OPTION_SELECT_GPIO);
+
+
+    /* check psave input and if set go into program download mode */
+    if( gpio_get(PSAVE_SELECT_GPIO) == false) {
+        reset_usb_boot(0, 0); // Enter USB bootloader mode
+    }
 
     // create usb output queue
     usb_output_init();
@@ -82,9 +103,12 @@ int main()
     }
     else
     {
-    // Wait until the USB CDC serial is connected
+    // Wait 10 seconds for USB CDC serial is connected
+        int usbWaitcnt = 1000;
         while (!stdio_usb_connected()) {
             sleep_ms(10);
+            if(--usbWaitcnt == 0)
+                break;
         }
 
         if (watchdog_caused_reboot()) {

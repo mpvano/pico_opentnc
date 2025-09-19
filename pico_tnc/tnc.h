@@ -145,7 +145,7 @@ typedef struct TNC {
 
 /* Define IO Ports */
 #define KISS_SELECT_GPIO 16 /* IO for switch to put device in kiss */
-#define OPTION_SELECT_GPIOP 18 /* IO for switch to slect a future option */
+#define OPTION_SELECT_GPIO 18 /* IO for switch to slect a future option */
 #define PSAVE_SELECT_GPIO 17 /* IO for switch to select Power Savings Mode */
 #define CON_LED_GPIO 14 /* IO for Console LED */
 #define STA_LED_GPIO 15 /* IO for Station LED */
