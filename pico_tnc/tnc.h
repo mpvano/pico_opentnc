@@ -82,7 +82,7 @@ enum DIP_OPTIONS {
     BOOTLOAD,       /* Enter Bootloader */
     KIS_CON,        /* USB is KISS PORT, Serial attach to TNC Console */
     CON_KIS,        /* USB attached to TNC Console, Serial is KISS PORT */
-    SPARE1,
+    CON_MSG,        /* USB attached to TNC Console, new bbs msgs dumped to serial */
     SPARE2,
     SPARE3
 };
