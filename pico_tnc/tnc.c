@@ -429,7 +429,7 @@ void tnc_emulate(void)
     }
     else /* flip */
     {
-      if( tty_peek(&tty[0]) || tty_peek(&tty[1] ) )
+      if( consolePeek() )
       {
 // This breaks inital autobaud!   if(state.iff1 && (siob.registers[1] & 0x18) )
 //      {
@@ -736,8 +736,7 @@ int val = 0;
       if(sio == &siob )
       {
         val = 0x2c; /* set CTS, DCD, TBUF_EMPTY always */
-        if(tty_peek(&tty[0])) val |=1; /* if keys in buffer set flag we have rx chars */  
-        if(tty_peek(&tty[1])) val |=1; /* if keys in buffer set flag we have rx chars */  
+        if( consolePeek() ) val |=1; /* if keys in buffer set flag we have rx chars */  
       }
       else /* handle sioa */
       {
@@ -874,3 +873,21 @@ unsigned int GetNextBbsMsgNo(void)
   msg = Ram[bbsmsg_address] + Ram[bbsmsg_address+1] * 256;
   return msg;
 }
+
+bool consolePeek(void)
+{
+  bool retval = false;
+
+  if(&tty[0].con_mode && stdio_usb_connected())
+  {
+    if( tty_peek(&tty[0])) retval = true;
+  }
+
+  if(&tty[1].con_mode)
+  {
+    if( tty_peek(&tty[1])) retval = true;
+  }
+
+  return retval;
+}
+

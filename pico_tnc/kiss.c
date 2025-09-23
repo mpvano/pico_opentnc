@@ -57,10 +57,12 @@ void kiss_packet(tty_t *ttyp)
     int type = ttyp->kiss_buf[0]; // kiss type indicator
 
     if (type == 0xff) {
+    
+        // Never exit kiss mode once assigned.
 
-        // exit kiss mode if user has flipped the kiss switch 
-        if( gpio_get(KISS_SELECT_GPIO) == true)
-            ttyp->kiss_mode = 0;
+        // // exit kiss mode if user has flipped the kiss switch 
+        // if( gpio_get(KISS_SELECT_GPIO) == true)
+        //     ttyp->kiss_mode = 0;
         return;
     }
 

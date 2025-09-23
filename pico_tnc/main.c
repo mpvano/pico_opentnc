@@ -56,6 +56,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 static const uint8_t greeting[] =
     "\r\nPico TNCEMU Emulated Z80 TNC V 1.00\r\n";
 
+uint8_t Dip_Option; /* Holds dip switch option setting */
+
 int main()
 {
     bool kiss_flash_state = false;
@@ -63,48 +65,86 @@ int main()
 
     stdio_init_all();
 
-    // Initialize the kiss mode slect switch pin
-    gpio_init(KISS_SELECT_GPIO);
-    // Set the pin as input
-    gpio_set_dir(KISS_SELECT_GPIO, GPIO_IN);
-    // Enable the internal pull-up resistor
-    gpio_pull_up(KISS_SELECT_GPIO);
+    #ifdef BUSY_PIN
+    gpio_init(BUSY_PIN);
+    gpio_set_dir(BUSY_PIN, true); // output
+#endif
 
-    // Initialize the kiss mode slect switch pin
-    gpio_init(PSAVE_SELECT_GPIO);
-    // Set the pin as input
-    gpio_set_dir(PSAVE_SELECT_GPIO, GPIO_IN);
-    // Enable the internal pull-up resistor
-    gpio_pull_up(PSAVE_SELECT_GPIO);
+#define SMPS_PIN 23
+#if 1
+    gpio_init(SMPS_PIN);
+    gpio_set_dir(SMPS_PIN, true); // output
+    gpio_put(SMPS_PIN, 0);
+#endif
 
-    // Initialize the kiss mode slect switch pin
-    gpio_init(OPTION_SELECT_GPIO);
+    // Initialize the dip switch i/o pins
+    gpio_init(DIP_SWITCH_0);
     // Set the pin as input
-    gpio_set_dir(OPTION_SELECT_GPIO, GPIO_IN);
+    gpio_set_dir(DIP_SWITCH_0, GPIO_IN);
     // Enable the internal pull-up resistor
-    gpio_pull_up(OPTION_SELECT_GPIO);
+    gpio_pull_up(DIP_SWITCH_0);
+
+    gpio_init(DIP_SWITCH_1);
+    // Set the pin as input
+    gpio_set_dir(DIP_SWITCH_1, GPIO_IN);
+    // Enable the internal pull-up resistor
+    gpio_pull_up(DIP_SWITCH_1);
+
+    gpio_init(DIP_SWITCH_2);
+    // Set the pin as input
+    gpio_set_dir(DIP_SWITCH_2, GPIO_IN);
+    // Enable the internal pull-up resistor
+    gpio_pull_up(DIP_SWITCH_2);
+
+    /* Set dip option val */
+    Dip_Option = 0;
+    if (gpio_get(DIP_SWITCH_0)) Dip_Option += 1;
+    if (gpio_get(DIP_SWITCH_1)) Dip_Option += 2;
+    if (gpio_get(DIP_SWITCH_2)) Dip_Option += 4;
 
 
     /* check psave input and if set go into program download mode */
-    if( gpio_get(PSAVE_SELECT_GPIO) == false) {
+    if( Dip_Option == BOOTLOAD) {
         reset_usb_boot(0, 0); // Enter USB bootloader mode
     }
 
     // create usb output queue
     usb_output_init();
 
-    tty[0].kiss_mode = 0; // default kiss off
-    tty[1].kiss_mode = 0;
+    tty[0].kiss_mode = false; // default kiss off
+    tty[1].kiss_mode = false;
+    tty[0].con_mode = false; // default console mode off
+    tty[1].con_mode = false;
 
-    // Read it and if 0 set kiss mode.
-    if( gpio_get(KISS_SELECT_GPIO) == false) {
-        tty[0].kiss_mode = 1; // activate kiss
-        tty[1].kiss_mode = 1; // activate kiss
-    }
-    else
+    /* Configure ports based on Dip Option */
+    switch (Dip_Option)
     {
-    // Wait 10 seconds for USB CDC serial is connected
-        int usbWaitcnt = 1000;
+        case CON_CON:
+            tty[0].con_mode = true;
+            tty[1].con_mode = true;
+            break;
+
+        case KIS_KIS:
+            tty[0].kiss_mode = true;
+            tty[1].kiss_mode = true;
+            break;
+
+        case KIS_CON:
+            tty[0].kiss_mode = true;
+            tty[1].con_mode = true;
+            break;
+
+        case CON_KIS:
+            tty[0].con_mode = true;
+            tty[1].kiss_mode = true;
+            break;
+
+    }
+
+    /* If usb port is on console wait for connect 10 seconds */
+    if(tty[0].kiss_mode)
+    {
+        int usbWaitcnt = 1000;  // Wait 10 seconds for USB CDC serial is connected
         while (!stdio_usb_connected()) {
             sleep_ms(10);
             if(--usbWaitcnt == 0)
@@ -130,18 +170,6 @@ int main()
         tty_write_str(&tty[0], greeting);
         tty_write_str(&tty[1], greeting);
     }
-
-#ifdef BUSY_PIN
-    gpio_init(BUSY_PIN);
-    gpio_set_dir(BUSY_PIN, true); // output
-#endif
-
-#define SMPS_PIN 23
-#if 1
-    gpio_init(SMPS_PIN);
-    gpio_set_dir(SMPS_PIN, true); // output
-    gpio_put(SMPS_PIN, 0);
-#endif
 
     //uint32_t ts = time_us_32();
 

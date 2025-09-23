@@ -74,6 +74,19 @@ extern unsigned char _binary_hk21rom_bin_size;
 /* Rom Image for Tnc Emulator */
 extern unsigned char *Rom;
 
+
+/* Dip switch setting optoons */
+enum DIP_OPTIONS {
+    CON_CON = 0,    /* Both USB and Serial attach to TNC Console */
+    KIS_KIS,        /* Both USB and Serial are Kiss Ports */
+    BOOTLOAD,       /* Enter Bootloader */
+    KIS_CON,        /* USB is KISS PORT, Serial attach to TNC Console */
+    CON_KIS,        /* USB attached to TNC Console, Serial is KISS PORT */
+    SPARE1,
+    SPARE2,
+    SPARE3
+};
+
 enum STATE {
 	FLAG,
 	DATA
@@ -144,9 +157,10 @@ typedef struct TNC {
 #define KISS_FULLDUPLEX 4
 
 /* Define IO Ports */
-#define KISS_SELECT_GPIO 16 /* IO for switch to put device in kiss */
-#define OPTION_SELECT_GPIO 18 /* IO for switch to slect a future option */
-#define PSAVE_SELECT_GPIO 17 /* IO for switch to select Power Savings Mode */
+#define DIP_SWITCH_0 16
+#define DIP_SWITCH_1 17
+#define DIP_SWITCH_2 18
+
 #define CON_LED_GPIO 14 /* IO for Console LED */
 #define STA_LED_GPIO 15 /* IO for Station LED */
 #define TNC_EMULATING_LED_PIN PICO_DEFAULT_LED_PIN
@@ -217,6 +231,8 @@ char tobcd(unsigned int);
 char frombcd(unsigned int bcd);
 void RewriteBbsMsg(int addr, char *txt );
 unsigned int GetNextBbsMsgNo(void);
+bool consolePeek(void);
+
 
 inline uint32_t tnc_time(void)
 {
@@ -244,9 +260,10 @@ enum TTY_SERIAL {
 typedef struct TTY {
     uint8_t kiss_buf[KISS_PACKET_LEN];
     int kiss_idx;
-    uint8_t kiss_mode;  // kiss mode
+    bool kiss_mode;  // kiss mode
     uint8_t kiss_state; // kiss state
     uint32_t kiss_timeout; // kiss timer
+    bool con_mode; // console attached to tnc
 
     uint8_t input_buf[CMD_BUF_LEN + 1];
     int inp_head;
