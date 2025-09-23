@@ -232,7 +232,9 @@ char frombcd(unsigned int bcd);
 void RewriteBbsMsg(int addr, char *txt );
 unsigned int GetNextBbsMsgNo(void);
 bool consolePeek(void);
-
+int consoleInput(void);
+void consoleOutput(uint8_t c);
+void consoleOutputStr(uint8_t const *str);
 
 inline uint32_t tnc_time(void)
 {

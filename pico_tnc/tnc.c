@@ -38,6 +38,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "flash.h"
 #include "tty.h"
 #include "send.h"
+#include "kiss.h"
 
 uint32_t __tnc_time;
 
@@ -71,6 +72,8 @@ uint32_t parm_check_time = 0;
 bool newMsg = false;
 bool newMsgFlashState = false;
 
+/* for snprintf */
+uint8_t msgbuf[25];
 
 /* Locations in ram where z80 code stores these parameters */
 unsigned int ax25_parm_location[NUMKISSPARMS-1]= {0x3FDB, 0x4033, 0x4035, 0x3FD7};
@@ -116,15 +119,16 @@ void tnc_init(void)
   }
   else // read saved ram memory from flash
   {
-      printf("TNCEMU:Reading Ram Data from Flash ");
+      consoleOutputStr("TNCEMU:Reading Ram Data from Flash ");
       int slot = flash_read(Ram, sizeof(Ram));
       if (slot >= 0) 
       {
-          printf("slot %d\n", slot);
+          snprintf(msgbuf,sizeof(msgbuf),"slot %d\n", slot);
       } else 
       {
-          printf(".\nRead failed!\n");
+          snprintf(msgbuf,sizeof(msgbuf),".\nRead failed!\n");
       }
+      consoleOutputStr(msgbuf);
   }
 
   char NewBBsMsg[] = DEFAULT_BBS_MSG;
@@ -346,15 +350,16 @@ void tnc_emulate(void)
       /* Disable watchdog during flash writes */
       watchdog_disable();
 
-      printf("TNCEMU:Saving Ram Data to Flash ");
+      consoleOutputStr("TNCEMU:Saving Ram Data to Flash ");
       int slot = flash_write(Ram, sizeof(Ram));
       if (slot >= 0) 
       {
-          printf("slot %d\n", slot);
+          snprintf(msgbuf,sizeof(msgbuf),"slot %d\n", slot);
       } else 
       {
-          printf(".\nWrite failed!\n");
+          snprintf(msgbuf,sizeof(msgbuf),".\nWrite failed!\n");
       }
+      consoleOutputStr(msgbuf);
 
       // set watchdog, timeout 1000 ms
       watchdog_enable(1000, true);
@@ -566,6 +571,10 @@ int IO_in (int port)
         if(--Ax25_In_Q[Ax25_In_Tail].count == 0) 
         {
           RxCharIn_Idx = 0;
+          /* Before removing any incoming ax25 packets send to any kiss ports */
+          // incoming KISS frame to serial
+          if(&tty[0].kiss_mode) kiss_output(&tty[0],&tnc[0]);
+          if(&tty[1].kiss_mode) kiss_output(&tty[1],&tnc[0]);
           ax25_InQ_Remove();
           ax25rdy=1;
         }
@@ -577,18 +586,7 @@ int IO_in (int port)
       break;
 
     case 0x1A: // SIOB Data
-      if( !tty_getch(&tty[0], &x) )
-      {
-        if( !tty_getch(&tty[1], &x) )
-        {
-          x = 0xff;
-        }
-      }
-      /* some key translations are they needed? */
-      if(x == 0x0a) x=0x0d;
-      if(x == 0x7f) x=0x08;
-      /* if a return char from console clear new bbs msgs */
-      if(x == 0x0d) newMsg = false;
+      x = consoleInput();
 
 #ifdef TNCEMUDEBUG
       if(x == '&') RxCharIn_Idx=1; // Trigger to inject test ax25 packet
@@ -650,8 +648,7 @@ void IO_out (int port, int x)
       break;
 
     case 0x1A: // SIOB Data
-      tty_write_char(&tty[0], x);
-      tty_write_char(&tty[1], x);
+      consoleOutput(x);
       tnc[0].active_timeout = DEFAULT_ACTIVITY_COUNT;
       break;
 
@@ -891,3 +888,48 @@ bool consolePeek(void)
   return retval;
 }
 
+int consoleInput(void)
+{
+  int retval = 0xff;
+  if(&tty[0].con_mode && stdio_usb_connected())
+  {
+    if( !tty_getch(&tty[0], &retval) )
+    {
+      retval = 0xff;
+      if (&tty[1].con_mode)
+      {
+        if( !tty_getch(&tty[1], &retval) )
+        {
+          retval = 0xff;
+        }
+      }
+    }
+  }
+  else if (&tty[1].con_mode)
+  {
+      if( !tty_getch(&tty[1], &retval) )
+      {
+        retval= 0xff;
+      }
+  }
+
+  /* some key translations are they needed? */
+  if(retval == 0x0a) retval=0x0d;
+  if(retval == 0x7f) retval=0x08;
+  /* if a return char from console clear new bbs msgs */
+  if(retval == 0x0d) newMsg = false;
+
+  return retval;
+}
+
+void consoleOutput(uint8_t c)
+{
+  if (&tty[0].con_mode && stdio_usb_connected()) tty_write_char(&tty[0], c);
+  if (&tty[1].con_mode) tty_write_char(&tty[1], c);
+}
+
+void consoleOutputStr(uint8_t const *str)
+{
+  if (&tty[0].con_mode && stdio_usb_connected()) tty_write_str(&tty[0], str );
+  if (&tty[1].con_mode) tty_write_str(&tty[1], str );
+}

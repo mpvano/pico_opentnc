@@ -56,6 +56,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 static const uint8_t greeting[] =
     "\r\nPico TNCEMU Emulated Z80 TNC V 1.00\r\n";
 
+// Watchdog Timer Reset Message
+static const uint8_t wdtfailmsg[] =
+    "Watch Dog Timer Failure\n";
+
 uint8_t Dip_Option; /* Holds dip switch option setting */
 
 int main()
@@ -150,11 +154,9 @@ int main()
             if(--usbWaitcnt == 0)
                 break;
         }
-
-        if (watchdog_caused_reboot()) {
-            printf("Watch Dog Timer Failure\n");
-        }
     }
+
+    if (watchdog_caused_reboot()) consoleOutputStr(wdtfailmsg);
 
     // initialize tnc
     tnc_init();
@@ -164,12 +166,8 @@ int main()
     tty_init();     // should call after tnc_init()
     //bell202_init();
 
-    // If not in kiss mode print greeting
-    if( !tty[0].kiss_mode|| !tty[1].kiss_mode) {
-        // output greeting text to both tty's (serial/usb)
-        tty_write_str(&tty[0], greeting);
-        tty_write_str(&tty[1], greeting);
-    }
+    // Write greeting to any consoles
+    consoleOutputStr(greeting);
 
     //uint32_t ts = time_us_32();
 
@@ -190,36 +188,24 @@ int main()
         }
 #endif
 
-        /* Test if in Kiss mode and if not emulate */
-        if(tty[0].kiss_mode == 0 && tty[1].kiss_mode == 0 ) 
+        // Emulate the virtual TNC z80 code
+        tnc_emulate();
+
+        /* check if any ports are kiss and have input */
+        // incoming KISS frame from serial
+        int ch;
+        if(tty[0].kiss_mode)
         {
-            // Emulate z80 code
-            tnc_emulate();
+            if( tty_getch(&tty[0], &ch) ) kiss_input(&tty[0], ch);
         }
-        else /* kiss mode */
+
+        if(tty[1].kiss_mode)
         {
-            if(ax25_InQ_HasData())
-            {
-                // incoming KISS frame to serial
-                kiss_output(&tty[0],&tnc[0]);
-                kiss_output(&tty[1],&tnc[0]);
-                ax25_InQ_Remove();
-            }
+            if( tty_getch(&tty[1], &ch) ) kiss_input(&tty[1], ch);
+        }
 
-            // incoming KISS frame from serial
-            int ch;
-            if( !tty_getch(&tty[0], &ch) )
-            {
-                if( tty_getch(&tty[1], &ch) )
-                {
-                    kiss_input(&tty[1], ch);
-                }
-            }
-            else
-            {
-                kiss_input(&tty[0], ch);
-            }
-
+        if(Dip_Option == KIS_KIS)
+        {
             if (tnc_time() - flash_time >= TIME_1SECOND) {
                 flash_time = tnc_time();
                 kiss_flash_state = ! kiss_flash_state;
