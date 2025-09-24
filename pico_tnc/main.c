@@ -230,11 +230,7 @@ int main()
 #endif
 
     // if not busy wait small time for next interrupt
-    if(tty[0].kiss_mode == 1 || tty[1].kiss_mode == 1) // always if in Kiss mode
-    {
-        __wfi();
-    }
-    else if(tnc[0].active_timeout == 0)
+    if(tnc[0].active_timeout == 0)
     {
         __wfi();
     }
