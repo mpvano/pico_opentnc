@@ -449,6 +449,10 @@ void tnc_emulate(void)
     {
       RxCharIn_Idx = 1; /* Let everyone know */
       Ax25_In_Dly = 75; /* this is an arbitrary delay amount so emulator can process rx packets */
+      /* Before removing any incoming ax25 packets send to any kiss ports */
+      // incoming KISS frame to serial
+      if(tty[0].kiss_mode) kiss_output(&tty[0],&tnc[0]);
+      if(tty[1].kiss_mode) kiss_output(&tty[1],&tnc[0]);
     }
 
     if(Ax25_In_Dly && !RxCharIn_Idx && !txundr_count) Ax25_In_Dly--;
@@ -571,10 +575,6 @@ int IO_in (int port)
         if(--Ax25_In_Q[Ax25_In_Tail].count == 0) 
         {
           RxCharIn_Idx = 0;
-          /* Before removing any incoming ax25 packets send to any kiss ports */
-          // incoming KISS frame to serial
-          if(&tty[0].kiss_mode) kiss_output(&tty[0],&tnc[0]);
-          if(&tty[1].kiss_mode) kiss_output(&tty[1],&tnc[0]);
           ax25_InQ_Remove();
           ax25rdy=1;
         }
@@ -875,12 +875,12 @@ bool consolePeek(void)
 {
   bool retval = false;
 
-  if(&tty[0].con_mode && stdio_usb_connected())
+  if(tty[0].con_mode && stdio_usb_connected())
   {
     if( tty_peek(&tty[0])) retval = true;
   }
 
-  if(&tty[1].con_mode)
+  if(tty[1].con_mode)
   {
     if( tty_peek(&tty[1])) retval = true;
   }
@@ -891,12 +891,12 @@ bool consolePeek(void)
 int consoleInput(void)
 {
   int retval = 0xff;
-  if(&tty[0].con_mode && stdio_usb_connected())
+  if(tty[0].con_mode && stdio_usb_connected())
   {
     if( !tty_getch(&tty[0], &retval) )
     {
       retval = 0xff;
-      if (&tty[1].con_mode)
+      if (tty[1].con_mode)
       {
         if( !tty_getch(&tty[1], &retval) )
         {
@@ -905,7 +905,7 @@ int consoleInput(void)
       }
     }
   }
-  else if (&tty[1].con_mode)
+  else if (tty[1].con_mode)
   {
       if( !tty_getch(&tty[1], &retval) )
       {
@@ -924,12 +924,12 @@ int consoleInput(void)
 
 void consoleOutput(uint8_t c)
 {
-  if (&tty[0].con_mode && stdio_usb_connected()) tty_write_char(&tty[0], c);
-  if (&tty[1].con_mode) tty_write_char(&tty[1], c);
+  if (tty[0].con_mode && stdio_usb_connected()) tty_write_char(&tty[0], c);
+  if (tty[1].con_mode) tty_write_char(&tty[1], c);
 }
 
 void consoleOutputStr(uint8_t const *str)
 {
-  if (&tty[0].con_mode && stdio_usb_connected()) tty_write_str(&tty[0], str );
-  if (&tty[1].con_mode) tty_write_str(&tty[1], str );
+  if (tty[0].con_mode && stdio_usb_connected()) tty_write_str(&tty[0], str );
+  if (tty[1].con_mode) tty_write_str(&tty[1], str );
 }
