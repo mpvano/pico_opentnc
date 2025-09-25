@@ -102,10 +102,9 @@ int main()
 
     /* Set dip option val */
     Dip_Option = 0;
-    if (gpio_get(DIP_SWITCH_0)) Dip_Option += 1;
-    if (gpio_get(DIP_SWITCH_1)) Dip_Option += 2;
-    if (gpio_get(DIP_SWITCH_2)) Dip_Option += 4;
-
+    if (!gpio_get(DIP_SWITCH_0)) Dip_Option += 1;
+    if (!gpio_get(DIP_SWITCH_1)) Dip_Option += 2;
+    if (!gpio_get(DIP_SWITCH_2)) Dip_Option += 4;
 
     /* check psave input and if set go into program download mode */
     if( Dip_Option == BOOTLOAD) {
