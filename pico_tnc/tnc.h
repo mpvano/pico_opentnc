@@ -77,14 +77,14 @@ extern unsigned char *Rom;
 
 /* Dip switch setting optoons */
 enum DIP_OPTIONS {
-    CON_CON = 0,    /* Both USB and Serial attach to TNC Console */
-    KIS_KIS,        /* Both USB and Serial are Kiss Ports */
-    BOOTLOAD,       /* Enter Bootloader */
+    CON_KIS = 0,    /* USB attached to TNC Console, Serial is KISS PORT */
     KIS_CON,        /* USB is KISS PORT, Serial attach to TNC Console */
-    CON_KIS,        /* USB attached to TNC Console, Serial is KISS PORT */
+    CON_CON,        /* Both USB and Serial attach to TNC Console */
+    KIS_KIS,        /* Both USB and Serial are Kiss Ports */
     CON_MSG,        /* USB attached to TNC Console, new bbs msgs dumped to serial */
-    SPARE2,
-    SPARE3
+    MSG_CON,        /* New bbs msgs dumped to USB, serial to TNC Console */
+    SPARE,          /* Future Use */
+    BOOTLOAD        /* Enter Bootloader */
 };
 
 enum STATE {
