@@ -62,10 +62,19 @@ static const uint8_t wdtfailmsg[] =
 
 uint8_t Dip_Option; /* Holds dip switch option setting */
 
+int Read_Dip_Switch()
+{
+    int retval = 0;
+    if (!gpio_get(DIP_SWITCH_0)) retval += 1;
+    if (!gpio_get(DIP_SWITCH_1)) retval += 2;
+    if (!gpio_get(DIP_SWITCH_2)) retval += 4;
+    return retval;
+}
+
+
 int main()
 {
-    bool kiss_flash_state = false;
-    uint32_t flash_time = tnc_time();
+    uint32_t dip_check_time = tnc_time();
 
     stdio_init_all();
 
@@ -101,10 +110,7 @@ int main()
     gpio_pull_up(DIP_SWITCH_2);
 
     /* Set dip option val */
-    Dip_Option = 0;
-    if (!gpio_get(DIP_SWITCH_0)) Dip_Option += 1;
-    if (!gpio_get(DIP_SWITCH_1)) Dip_Option += 2;
-    if (!gpio_get(DIP_SWITCH_2)) Dip_Option += 4;
+    Dip_Option = Read_Dip_Switch();
 
     /* check psave input and if set go into program download mode */
     if( Dip_Option == BOOTLOAD) {
@@ -142,6 +148,14 @@ int main()
             tty[1].kiss_mode = true;
             break;
 
+        case CON_MSG:
+            break;
+
+        case MSG_CON:
+            break;
+
+        case SPARE:
+            break;
     }
 
     /* If usb port is on console wait for connect 10 seconds */
@@ -203,13 +217,13 @@ int main()
             if( tty_getch(&tty[1], &ch) ) kiss_input(&tty[1], ch);
         }
 
-        if(Dip_Option == KIS_KIS)
-        {
-            if (tnc_time() - flash_time >= TIME_1SECOND) {
-                flash_time = tnc_time();
-                kiss_flash_state = ! kiss_flash_state;
-                gpio_put(tnc[0].staled_pin, kiss_flash_state);
-                gpio_put(tnc[0].conled_pin, !kiss_flash_state);
+        if (tnc_time() - dip_check_time >= TIME_1SECOND) {
+            dip_check_time = tnc_time();
+            if(Read_Dip_Switch() != Dip_Option) /* dip switch change? */
+            {
+                while(1) /* loop forever so watchdog resets */
+                {
+                }
             }
         }
 
