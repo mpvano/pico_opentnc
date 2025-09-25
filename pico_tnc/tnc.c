@@ -451,7 +451,7 @@ void tnc_emulate(void)
       Ax25_In_Dly = 75; /* this is an arbitrary delay amount so emulator can process rx packets */
       /* Before removing any incoming ax25 packets send to any kiss ports */
       // incoming KISS frame to serial
-      if(tty[0].kiss_mode) kiss_output(&tty[0],&tnc[0]);
+      if(tty[0].kiss_mode && stdio_usb_connected()) kiss_output(&tty[0],&tnc[0]);
       if(tty[1].kiss_mode) kiss_output(&tty[1],&tnc[0]);
     }
 
