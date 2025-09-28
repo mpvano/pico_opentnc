@@ -54,7 +54,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 // greeting message
 static const uint8_t greeting[] =
-    "\r\nPico TNCEMU Emulated Z80 TNC V 1.00\r\n";
+    "\r\nPico TNCEMU Emulated Z80 TNC Ver 0.40\r\n";
 
 // Watchdog Timer Reset Message
 static const uint8_t wdtfailmsg[] =
@@ -158,10 +158,10 @@ int main()
             break;
     }
 
-    /* If usb port is on console wait for connect 10 seconds */
-    if(tty[0].kiss_mode)
+    /* If either port is on console wait for connect 10 seconds */
+    if(tty[0].con_mode || tty[1].con_mode)
     {
-        int usbWaitcnt = 1000;  // Wait 10 seconds for USB CDC serial is connected
+        int usbWaitcnt = 500;  // Wait 5 seconds for USB CDC serial is connected
         while (!stdio_usb_connected()) {
             sleep_ms(10);
             if(--usbWaitcnt == 0)
