@@ -451,7 +451,7 @@ void tnc_emulate(void)
       Ax25_In_Dly = 75; /* this is an arbitrary delay amount so emulator can process rx packets */
       /* Before removing any incoming ax25 packets send to any kiss ports */
       // incoming KISS frame to serial
-      if(tty[0].kiss_mode && stdio_usb_connected()) kiss_output(&tty[0],&tnc[0]);
+      if(tty[0].kiss_mode) kiss_output(&tty[0],&tnc[0]);
       if(tty[1].kiss_mode) kiss_output(&tty[1],&tnc[0]);
     }
 
@@ -875,7 +875,7 @@ bool consolePeek(void)
 {
   bool retval = false;
 
-  if(tty[0].con_mode && stdio_usb_connected())
+  if(tty[0].con_mode)
   {
     if( tty_peek(&tty[0])) retval = true;
   }
@@ -891,7 +891,7 @@ bool consolePeek(void)
 int consoleInput(void)
 {
   int retval = 0xff;
-  if(tty[0].con_mode && stdio_usb_connected())
+  if(tty[0].con_mode)
   {
     if( !tty_getch(&tty[0], &retval) )
     {
@@ -924,12 +924,12 @@ int consoleInput(void)
 
 void consoleOutput(uint8_t c)
 {
-  if (tty[0].con_mode && stdio_usb_connected()) tty_write_char(&tty[0], c);
+  if (tty[0].con_mode) tty_write_char(&tty[0], c);
   if (tty[1].con_mode) tty_write_char(&tty[1], c);
 }
 
 void consoleOutputStr(uint8_t const *str)
 {
-  if (tty[0].con_mode && stdio_usb_connected()) tty_write_str(&tty[0], str );
+  if (tty[0].con_mode) tty_write_str(&tty[0], str );
   if (tty[1].con_mode) tty_write_str(&tty[1], str );
 }
