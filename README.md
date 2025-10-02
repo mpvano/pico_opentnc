@@ -16,7 +16,6 @@ PICO TNC is the Terminal Node Controler for Amateur Packet Radio powered by Rasp
 - Monitor Emulated TNC SIO uart registers for baud rate changes and update PICO serial port baud accordingly.
 - Add 1600 1800 hz modem for HF Modem support.
 - Investigate if FX.25 can be added especially for hf.
-- Investigate possibility of having USB port as serial terminal port at the same time as having kiss port on ttl serial port and vice versa
 
 ![pcb_art](pico_tnc_action.jpg)
 
