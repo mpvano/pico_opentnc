@@ -1055,7 +1055,7 @@ void Con_Serial_ParmChange(void)
       break;
 
     case 3:
-      data_bits = 8;
+      stop_bits = 2;
       break;
 
     default:
