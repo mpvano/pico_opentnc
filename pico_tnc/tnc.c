@@ -30,6 +30,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "pico/stdlib.h"
 #include "hardware/rtc.h"
 #include "hardware/watchdog.h"
+#include "hardware/uart.h"
 
 #include "tnc.h"
 #include "z80emu.h"
@@ -229,6 +230,12 @@ void tnc_init(void)
   //printf("DELAYED_N = %d\n", DELAYED_N);
 
   tnc_t *tp = &tnc[0];
+
+  /* Init ctc2 emulated ctc reg values */
+  tp->ctc2_control = 0;
+  tp->ctc2_tc = 0;
+  tp->conSpeed = 75; /* 75 baud gets translated to 115200 in Con_Serial_ParmChange*/
+
   /* Memorize certain ax25 parms to detect any changes later */
   for(x=0; x< NUMKISSPARMS-1; x++) /* start 1 skip txdelay for now */
   {
@@ -559,7 +566,24 @@ int IO_in (int port)
     case 0x11: // CTC Chan1
       break;
 
+    /* This CTC Channel is used to set Baud rates for serial port */
     case 0x12: // CTC Chan2
+      if(tnc[0].ctc2_control & 0x04) /* If time constant load bit is set */
+      {
+        tnc[0].ctc2_control &= 0xfb; /* reset load bit */
+        tnc[0].ctc2_tc = x; /* set time constant */
+
+        unsigned int ctc_div = 16;
+        if( tnc[0].ctc2_control & 0x20 ) ctc_div = 256;
+
+        /* Compute Baud Rate */
+        unsigned int baud = 2457600 / ctc_div;
+        baud = baud / tnc[0].ctc2_tc;
+        baud = baud / 16;
+        tnc[0].conSpeed = baud;
+      }
+      else tnc[0].ctc2_control = x; /* set ctc2_control */
+      Con_Serial_ParmChange();
       break;
 
     case 0x13: // CTC Chan3
@@ -693,6 +717,44 @@ void SIO_Cmd_Write( IC_SIO *sio, unsigned char x)
   {
 //    if(abortflag && sio->cmd_ptr == 5 && !(x & 2)) 
 //      printf("PC=%x\n",state.pc);
+
+    /* Here check if console uart channel and if so if any */
+    /* channel parms are changed then update pico serial port to */
+    /* match same baud rate, word len, parity and stop bits */
+    // if(sio == &siob )
+    // {
+    //   bool parmUpdate = false;
+    //   switch(sio->cmd_ptr)
+    //   {
+    //     case 3: /* Rx bits per char in D6 & D7 */
+    //       if( (x & 0xC0) != (sio->registers[3] & 0xC0) )
+    //       {
+    //         //printf("Rx Bits changed to %x\n",x & 0xc0);
+    //         parmUpdate = true;
+    //       }
+    //       break;
+
+    //     case 4: /* Clock Mode in D6 & D7 Stop Bits in D2 & D3 Parity in D0 & D1 */
+    //       if( (x & 0x0F) != (sio->registers[4] & 0x0F) )
+    //       {
+//            printf("Stop/Parity Bits changed to %x\n",x & 0xCF);
+            // parmUpdate = true;
+          // }
+          // break;
+
+//         case 5:  /* Tx bits per char in D5 & D6 */
+//           if( (x & 0x60) != (sio->registers[5] & 0x60) )
+//           {
+// //            printf("Tx Bits changed to %x\n",x & 0x60);
+//             parmUpdate = true;
+//           }
+//           break;
+
+    //     default:
+    //       break;
+    //   }
+    //   if(parmUpdate) Con_Serial_ParmChange();
+    // }
 
     sio->registers[sio->cmd_ptr] = x; 
     sio->cmd_ptr = 0; /* after a write it sets back to 0 */
@@ -932,4 +994,83 @@ void consoleOutputStr(uint8_t const *str)
 {
   if (tty[0].con_mode) tty_write_str(&tty[0], str );
   if (tty[1].con_mode) tty_write_str(&tty[1], str );
+}
+
+void Con_Serial_ParmChange(void)
+{
+  uint baud_rate;
+  uint data_bits;
+  uint stop_bits;
+  uart_parity_t parity;
+
+  /* If tty1 the uart port is not in console mode do nothing !*/
+  if(!tty[1].con_mode) return;
+
+  baud_rate = tnc[0].conSpeed;
+
+  /* translate lower bauds to high ones that tnc normally did not support */
+  if( baud_rate == 75 ) baud_rate = 115200;
+  if( baud_rate == 110 ) baud_rate = 38400;
+
+  /* determine data_bits */
+  switch( siob.registers[3] >> 6)
+  {
+    case 0:
+      data_bits = 5;
+      break;
+
+    case 1:
+      data_bits = 7;
+      break;
+
+    case 2:
+      data_bits = 6;
+      break;
+
+    case 3:
+      data_bits = 8;
+      break;
+
+    default:
+      printf("TNCEMU:Con_Serial_ParmChange invalid data_bits!\n");
+      data_bits = 8;
+      break;
+  }
+
+  /* determine stop_bits */
+  switch( (siob.registers[3] >> 2) & 0x03 )
+  {
+    case 0:
+      printf("TNCEMU:Con_Serial_ParmChange invalid stop_bits!\n");
+      stop_bits = 1;
+      break;
+
+    case 1:
+      stop_bits = 1;
+      break;
+
+    case 2:
+      printf("TNCEMU:Con_Serial_ParmChange invalid stop_bits!\n");
+      stop_bits = 1;
+      break;
+
+    case 3:
+      data_bits = 8;
+      break;
+
+    default:
+      stop_bits = 2;
+      break;
+  }
+
+  /* Determine Parity */
+  if( siob.registers[3] & 0x01 )
+  {
+    if( siob.registers[3] & 0x02 ) parity = UART_PARITY_EVEN;
+    else parity = UART_PARITY_ODD;
+  }
+  else parity = UART_PARITY_NONE;
+
+  uint result_baud = uart_init(uart0, baud_rate);
+  uart_set_format(uart0, data_bits, stop_bits, parity);
 }

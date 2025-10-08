@@ -210,6 +210,10 @@ typedef struct TNC {
     uint8_t staled_pin;
 
     int active_timeout;
+    uint conSpeed;
+    uint8_t ctc2_control;
+    uint8_t ctc2_tc;
+
 
 } tnc_t;
 
@@ -235,6 +239,7 @@ bool consolePeek(void);
 int consoleInput(void);
 void consoleOutput(uint8_t c);
 void consoleOutputStr(uint8_t const *str);
+void Con_Serial_ParmChange(void);
 
 inline uint32_t tnc_time(void)
 {
