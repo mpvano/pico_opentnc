@@ -3513,18 +3513,6 @@
 		)
 		(uuid "6b109fe7-3143-41d4-bbcc-25ff14fe2bc1")
 	)
-	(text "Options\n1 KISS MODE\n2 LOW POWER MODE\n3 OPTION 1\n4 LED DISABLE"
-		(exclude_from_sim no)
-		(at 24.638 122.428 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-				(thickness 0.1588)
-			)
-			(justify left)
-		)
-		(uuid "79ffd878-34b3-4686-8555-b8a7f070c40e")
-	)
 	(text "Green"
 		(exclude_from_sim no)
 		(at 165.862 87.122 0)
@@ -4304,7 +4292,7 @@
 			)
 		)
 	)
-	(global_label "KISS"
+	(global_label "OPT1"
 		(shape input)
 		(at 41.91 110.49 0)
 		(fields_autoplaced yes)
@@ -4459,7 +4447,7 @@
 			)
 		)
 	)
-	(global_label "OPT2"
+	(global_label "OPT3"
 		(shape input)
 		(at 41.91 105.41 0)
 		(fields_autoplaced yes)
@@ -4615,7 +4603,7 @@
 			)
 		)
 	)
-	(global_label "OPT1"
+	(global_label "OPT2"
 		(shape input)
 		(at 41.91 107.95 0)
 		(fields_autoplaced yes)
@@ -4813,7 +4801,7 @@
 			)
 		)
 	)
-	(global_label "OPT2"
+	(global_label "OPT3"
 		(shape input)
 		(at 102.87 119.38 0)
 		(fields_autoplaced yes)
@@ -4857,7 +4845,7 @@
 			)
 		)
 	)
-	(global_label "OPT1"
+	(global_label "OPT2"
 		(shape input)
 		(at 102.87 124.46 0)
 		(fields_autoplaced yes)
@@ -4879,7 +4867,7 @@
 			)
 		)
 	)
-	(global_label "KISS"
+	(global_label "OPT1"
 		(shape input)
 		(at 102.87 127 0)
 		(fields_autoplaced yes)
