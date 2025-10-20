@@ -157,7 +157,7 @@ typedef struct TNC {
 #define KISS_FULLDUPLEX 4
 
 /* TncEmu emulation requires a minimum tx delay of 55ms */
-#define MIN_TNCEMU_TXDELAY = 55
+#define MIN_TNCEMU_TXDELAY 55
 
 /* Define IO Ports */
 #define DIP_SWITCH_0 16
