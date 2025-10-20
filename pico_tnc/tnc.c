@@ -45,10 +45,8 @@ uint32_t __tnc_time;
 
 tnc_t tnc[PORT_N];
 
-double  cycles;
+double  cycles,timer_int,sio_int;
 double  total;
-
-int  timer_int;
 
 /* tnc emulator */
 unsigned char flop,oldptt;
@@ -239,6 +237,10 @@ void tnc_init(void)
   /* Memorize certain ax25 parms to detect any changes later */
   for(x=0; x< NUMKISSPARMS-1; x++) /* start 1 skip txdelay for now */
   {
+    if( x == KISS_TXDELAY && Ram[ax25_parm_location[x]] < MIN_TNCEMU_TXDELAY )
+    {
+      Ram[ax25_parm_location[x]] = MIN_TNCEMU_TXDELAY;
+    }
     tp->ax25_parms[x] = Ram[ax25_parm_location[x]];
   }
 
@@ -250,7 +252,7 @@ void tnc_init(void)
     Z80Reset(&state);
 
     /* Init z80 cycle time counters */
-    total = timer_int = 0;
+    total = timer_int = sio_int = 0;
 
     parm_check_time = tnc_time();
 }
@@ -268,19 +270,19 @@ void tnc_emulate(void)
 #endif
     cycles = Z80Emulate(&state, CYCLES_PER_PASS);
     total += cycles;
+    timer_int += cycles;
+    sio_int += cycles;
 
   /* Every other run do a timer interrupt, we come into the emulator
   roughly ever 10ms not super acurate but it */
-  if( timer_int == 0)
+  if( timer_int >= 150000)
   {
-    timer_int = 3;
-    total += Z80Interrupt (&state, 0x10 );
-    cycles = Z80Emulate(&state, CYCLES_PER_INT);
+    timer_int = 0;
+    cycles = Z80Interrupt (&state, 0x10 );
+    cycles += Z80Emulate(&state, CYCLES_PER_INT);
     total += cycles;
-  }
-  else
-  {
-    timer_int--;
+    timer_int += cycles;
+    sio_int += cycles;
   }
 
   /* Every second update our clock from pico rtc */
@@ -386,7 +388,10 @@ void tnc_emulate(void)
     }
   }
 
+  if(sio_int > 55000 )
+  {
     flop = flop ^0x01;
+    sio_int = 0;
     if(flop)
     {
 
@@ -397,6 +402,8 @@ void tnc_emulate(void)
           while(!state.iff1) cycles = Z80Emulate(&state, CYCLES_PER_INT );
           cycles += Z80Interrupt (&state, siob.registers[2] | 0x0c);   // ax25 char read int
           total += cycles;
+          timer_int += cycles;
+          sio_int += cycles;
         }
 
         if(ax25rdy)
@@ -404,14 +411,15 @@ void tnc_emulate(void)
           while(!state.iff1) cycles = Z80Emulate(&state, CYCLES_PER_INT );
           cycles += Z80Interrupt (&state, siob.registers[2] | 0x0e); // eof int
           total += cycles;
+          timer_int += cycles;
+          sio_int += cycles;
         }
       }
       else
       {
         if(txundr_count)
         {
-          txundr_count--;
-          if(!txundr_count)
+          if(--txundr_count == 0)
           {
             feedflag = 1; /* txunderrun we can send packet!*/
             if(Ax25_Out_Cnt)
@@ -427,14 +435,18 @@ void tnc_emulate(void)
           while(!state.iff1) cycles = Z80Emulate(&state, CYCLES_PER_INT );
           cycles += Z80Interrupt (&state, siob.registers[2] | 0x0a); // ext stat int
           total += cycles;
+          timer_int += cycles;
+          sio_int += cycles;
         }
         else
         {
           if(siob.registers[1] & 2)
           {
-        // while(!state.iff1) total += Z80Emulate(&state, CYCES_PER_INT );
-            cycles = Z80Interrupt (&state, siob.registers[2] );
+            while(!state.iff1) cycles += Z80Emulate(&state, CYCLES_PER_INT );
+            cycles += Z80Interrupt (&state, siob.registers[2] );
             total += cycles;
+            timer_int += cycles;
+            sio_int += cycles;
           }
         }
       }
@@ -445,11 +457,20 @@ void tnc_emulate(void)
       {
 // This breaks inital autobaud!   if(state.iff1 && (siob.registers[1] & 0x18) )
 //      {
-        total += Z80Interrupt (&state, siob.registers[2] | 4);
+        cycles = Z80Interrupt (&state, siob.registers[2] | 4);
+        total += cycles;
+        timer_int += cycles;
+        sio_int += cycles;
 //      }
         tp->active_timeout = DEFAULT_ACTIVITY_COUNT;
       } 
-      else total += Z80Interrupt (&state, siob.registers[2] | 8 );
+      else 
+      {
+        cycles = Z80Interrupt (&state, siob.registers[2] | 8 );
+        total += cycles;
+        timer_int += cycles;
+        sio_int += cycles;
+      }
     }
 
     if(ax25_InQ_HasData() && !RxCharIn_Idx && !ax25rdy && !txundr_count  && !Ax25_In_Dly ) /* do we have a socket */
@@ -463,34 +484,35 @@ void tnc_emulate(void)
     }
 
     if(Ax25_In_Dly && !RxCharIn_Idx && !txundr_count) Ax25_In_Dly--;
+  }
 
-    if(oldptt != (sioa.registers[5] & 2))
-    {
-      oldptt = sioa.registers[5] & 2;
+  if(oldptt != (sioa.registers[5] & 2))
+  {
+    oldptt = sioa.registers[5] & 2;
 #ifdef TNCEMUDEBUG
-      printf("ptt=%x\n",oldptt);
+    printf("ptt=%x\n",oldptt);
 #endif
-      if(oldptt == 2)
-      {
-        txundr_count=10;
-      }
-    }
-
-    /* Here check status of tnc buffers and if work to do set activity */
-    if(RxCharIn_Idx > 0 || Ax25_Out_Cnt > 0 )
+    if(oldptt == 2)
     {
-      //printf("%d-%d\n",RxCharIn_Idx,Ax25_Out_Cnt);
-      tp->active_timeout = DEFAULT_ACTIVITY_COUNT;
+      txundr_count=10;
     }
+  }
 
-    /* If activity timer set decrement until 0 */
-    if(tp->active_timeout > 0)
-    {
-      tp->active_timeout--;
+  /* Here check status of tnc buffers and if work to do set activity */
+  if(RxCharIn_Idx > 0 || Ax25_Out_Cnt > 0 )
+  {
+    //printf("%d-%d\n",RxCharIn_Idx,Ax25_Out_Cnt);
+    tp->active_timeout = DEFAULT_ACTIVITY_COUNT;
+  }
+
+  /* If activity timer set decrement until 0 */
+  if(tp->active_timeout > 0)
+  {
+    tp->active_timeout--;
 #ifdef TNC_EMULATING_LED_PIN
-      gpio_put(TNC_EMULATING_LED_PIN,1);
+    gpio_put(TNC_EMULATING_LED_PIN,1);
 #endif
-    }
+  }
 
 #ifdef TNCEMUDEBUG
   if (state.status & FLAG_STOP_EMULATION) 
@@ -598,6 +620,20 @@ int IO_in (int port)
 #ifdef TNCEMUDEBUG
       if(x == '&') RxCharIn_Idx=1; // Trigger to inject test ax25 packet
 #endif
+      if(x == '&')
+      {
+        printf("\n Diagnostic Info:\n");
+        printf("txunder=%d, feedflag=%d, Ax25OutCount=%d\n",txundr_count,feedflag,Ax25_Out_Cnt);
+        printf("abotr=%d, busy=%d, sendState=%d, sendQfree=%d \n",abortflag,tnc[0].busy,tnc[0].send_state,send_queue_free(&tnc[0]));
+        printf("SIO REG 0 = %x ",sioa.registers[0]);
+        printf("SIO REG 1 = %x ",sioa.registers[1]);
+        printf("SIO REG 2 = %x\n",sioa.registers[2]);
+        printf("SIO REG 3 = %x ",sioa.registers[3]);
+        printf("SIO REG 4 = %x ",sioa.registers[4]);
+        printf("SIO REG 5 = %x\n",sioa.registers[5]);
+        printf("SIO REG 6 = %x ",sioa.registers[6]);
+      }
+      if(x == '*') feedflag = 1;
       break;
 
     case 0x1B: // SIOB Cmd
@@ -722,7 +758,7 @@ void SIO_Cmd_Write( IC_SIO *sio, unsigned char x)
   }
   else /* set write register */
   {
-    if(x & 0x20) feedflag=0;
+    if(x == 0x28) feedflag=0;
     if(x == 8)  abortflag=1;/* Abort Seq SDLC */
     if(x == 0x18 ) /* handle special reset case */
     {
@@ -731,7 +767,7 @@ void SIO_Cmd_Write( IC_SIO *sio, unsigned char x)
     }
     else 
     {
-      if(!(x & 0x38)) 
+      if((x & 0x38)==0) 
       {
         sio->cmd_ptr = x & 0x07; /* lsb 3 bits select reg for next write/read */
         sio->state = 1; /* flip state */
