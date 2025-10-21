@@ -52,8 +52,6 @@
 #define TTY_N 3                             // number of serial
 #define CMD_BUF_LEN 255
 
-#define VERSION_INFO "1.0"
-
 /* Additional Z80_STATE status flag to request emulation termination. */
 #define FLAG_STOP_EMULATION     (1 << 31)
 //#define TNCEMUDEBUG 1

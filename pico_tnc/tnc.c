@@ -237,10 +237,6 @@ void tnc_init(void)
   /* Memorize certain ax25 parms to detect any changes later */
   for(x=0; x< NUMKISSPARMS-1; x++) /* start 1 skip txdelay for now */
   {
-    if( x == KISS_TXDELAY && Ram[ax25_parm_location[x]] < MIN_TNCEMU_TXDELAY )
-    {
-      Ram[ax25_parm_location[x]] = MIN_TNCEMU_TXDELAY;
-    }
     tp->ax25_parms[x] = Ram[ax25_parm_location[x]];
   }
 
