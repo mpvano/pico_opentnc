@@ -614,8 +614,6 @@ int IO_in (int port)
       x = consoleInput();
 
 #ifdef TNCEMUDEBUG
-      if(x == '&') RxCharIn_Idx=1; // Trigger to inject test ax25 packet
-#endif
       if(x == '&')
       {
         printf("\n Diagnostic Info:\n");
@@ -629,7 +627,7 @@ int IO_in (int port)
         printf("SIO REG 5 = %x\n",sioa.registers[5]);
         printf("SIO REG 6 = %x ",sioa.registers[6]);
       }
-      if(x == '*') feedflag = 1;
+#endif
       break;
 
     case 0x1B: // SIOB Cmd
