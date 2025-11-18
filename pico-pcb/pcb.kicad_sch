@@ -6,8 +6,8 @@
 	(paper "A4")
 	(title_block
 		(title "Pico TncEmu Radio Interface SubBoard")
-		(date "2025-08-13")
-		(rev "0.01")
+		(date "2025-11-18")
+		(rev "0.70")
 		(company "pfiliberti (KF7PSM)")
 	)
 	(lib_symbols
@@ -4008,6 +4008,16 @@
 	)
 	(wire
 		(pts
+			(xy 135.89 128.27) (xy 143.51 128.27)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "7815fff1-f56e-42a8-9154-5a1ea8c743df")
+	)
+	(wire
+		(pts
 			(xy 142.24 88.9) (xy 147.32 88.9)
 		)
 		(stroke
@@ -4055,6 +4065,16 @@
 			(type default)
 		)
 		(uuid "957135f3-fb95-4655-a8c1-be1b01da6371")
+	)
+	(wire
+		(pts
+			(xy 125.73 128.27) (xy 130.81 128.27)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "a128617c-8eb0-4acd-a6dd-4c5aeeec743a")
 	)
 	(wire
 		(pts
@@ -4165,16 +4185,6 @@
 			(type default)
 		)
 		(uuid "d0766c6e-7e8e-4de7-9d5b-8cd1b2b5b281")
-	)
-	(wire
-		(pts
-			(xy 142.24 128.27) (xy 143.51 128.27)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "d32276c2-b718-4dab-baeb-9694830ec4a4")
 	)
 	(wire
 		(pts
@@ -4383,7 +4393,7 @@
 	)
 	(global_label "PWM"
 		(shape input)
-		(at 142.24 128.27 180)
+		(at 125.73 128.27 180)
 		(fields_autoplaced yes)
 		(effects
 			(font
@@ -4393,7 +4403,7 @@
 		)
 		(uuid "4ace8b8e-2568-4501-901a-5068e4855638")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 135.082 128.27 0)
+			(at 118.572 128.27 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -5570,6 +5580,73 @@
 	)
 	(symbol
 		(lib_id "Device:R_Small")
+		(at 133.35 128.27 270)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "29f30fca-2b2a-40d8-8849-96785272bab2")
+		(property "Reference" "R10"
+			(at 133.35 130.048 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "100"
+			(at 133.35 125.984 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "Resistor_THT:R_Axial_DIN0204_L3.6mm_D1.6mm_P5.08mm_Horizontal"
+			(at 133.35 128.27 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 133.35 128.27 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Resistor, small symbol"
+			(at 133.35 128.27 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "2"
+			(uuid "3d15be27-ff94-4673-b94b-9e941951fbab")
+		)
+		(pin "1"
+			(uuid "a643fc97-b540-47aa-abfe-b1ea64472434")
+		)
+		(instances
+			(project "pcb"
+				(path "/96a10117-2309-4a27-a12f-47eb48e845e4"
+					(reference "R10")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:R_Small")
 		(at 166.37 139.7 0)
 		(unit 1)
 		(exclude_from_sim no)
@@ -6367,8 +6444,8 @@
 				(justify left)
 			)
 		)
-		(property "Value" "100n"
-			(at 159.512 138.684 0)
+		(property "Value" "100nF"
+			(at 164.592 131.826 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -7189,8 +7266,8 @@
 				(justify left)
 			)
 		)
-		(property "Value" "100n"
-			(at 138.176 134.112 0)
+		(property "Value" "100nF"
+			(at 137.414 134.112 0)
 			(effects
 				(font
 					(size 1.27 1.27)
