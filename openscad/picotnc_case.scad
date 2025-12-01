@@ -9,6 +9,8 @@ li=73.0001;
 h=28.0001;
 // wall thickness
 th=2.0001;
+// Adj Pot Hole Radius
+potr = 2.7;
 // rounded corner radius
 r=3;
 
@@ -281,7 +283,7 @@ module sidecutouts()
     
     translate([-15.5, int_l/2-1, pcb_foot_h+pcb_thickness+th+3.5])
         rotate([270, 0, 0])
-        cylinder(h=th*2, r=2.7);
+        cylinder(h=th*2, r=potr);
     
 }
 
