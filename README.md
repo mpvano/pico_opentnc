@@ -1,3 +1,7 @@
+# PICO_OPENTNC
+
+This is a fork of Peter Filberti's excellent TNC project modified to allow his code to run on the openTNC hardware reference design. This way either firmware can be used on that hardware merely by swapping preprogammed microcontrollers. Note that this fork is for the Pi Pico 2040 only.
+
 # PICO TNC
 
 PICO TNC is the Terminal Node Controler for Amateur Packet Radio powered by Raspberry Pi Pico. This is a fork of that project. I have removed all of the major features of the code except for the modulator/demodulator section and inserted a z80 emulator from my TNCEMU project that emulates a Heathkit HK21 Pocket Packet. Introductory Video can be seen here: https://youtu.be/zq6JLoosqGQ
