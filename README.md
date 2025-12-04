@@ -24,8 +24,8 @@ PICO TNC is the Terminal Node Controler for Amateur Packet Radio powered by Rasp
 
 ## How to build
 ```
-git clone https://github.com/pfiliberti/pico_tnc.git
-cd pico_tnc
+git clone https://github.com/mpvano/pico_opentnc.git
+cd pico_opentnc
 mkdir build
 cd build
 cmake ..
